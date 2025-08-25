@@ -30,11 +30,8 @@ Brasquete é um jogo web de simulação de basquete inspirado no Brasfoot, volta
 src/
 ├─ app/
 │  ├─ page.tsx           # Página inicial / dashboard
-│  └─ match/page.tsx     # Simulação de partidas
-├─ components/
-│  ├─ PlayerCard.tsx
-│  ├─ TeamDisplay.tsx
-│  └─ MatchSimulation.tsx
+│  └─ match/
+│     └─page.tsx     # Simulação de partidas
 ├─ data/
 │  └─ teams.ts           # Dados dos times e jogadores
 └─ utils/
