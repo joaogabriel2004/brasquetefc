@@ -77,11 +77,11 @@ export async function simulateMatchAsync(
       if (rand < 0.70) {
         points = 2;
         shotType = '2 points';
-        chance = attacker.attack / (attacker.attack + defender.defense) * (attacker.energy / 50);
+        chance = attacker.attack / (attacker.attack + defender.defense) * (attacker.energy / 55);
       } else if (rand < 0.95) {
         points = 3;
         shotType = '3 points';
-        chance = (attacker.attack * 0.8) / (attacker.attack + defender.defense) * (attacker.energy / 60);
+        chance = (attacker.attack * 0.8) / (attacker.attack + defender.defense) * (attacker.energy / 70);
       } else {
         points = 1;
         shotType = 'Free throw';
@@ -104,7 +104,7 @@ export async function simulateMatchAsync(
       } else {
         if (randomChance(chance)) {
           score[teamId] += points;
-          events.push(`[${minute}:${second < 10 ? '0' : ''}${second}] ${attacker.name} acertou um ${shotType} em cima de ${defender.name}! (+${points}`);
+          events.push(`[${minute}:${second < 10 ? '0' : ''}${second}] ${attacker.name} acertou um ${shotType} em cima de ${defender.name}! (+${points})`);
         } else {
           events.push(`[${minute}:${second < 10 ? '0' : ''}${second}] ${attacker.name} errou o ${shotType}.`);
         }
