@@ -8,13 +8,24 @@ export default function MatchPage() {
   const [loading, setLoading] = useState(false);
   const [paused, setPaused] = useState(false);
   const [showSubs, setShowSubs] = useState(false);
+  const [gameEnded, setGameEnded] = useState(false);
 
   const handleSimulate = async () => {
     setLoading(true);
     setResult(null);
+    setGameEnded(false);
+
     await simulateMatchAsync(teams[0], teams[1], (events, score, quarterScores, boxscore, starters, bench) => {
       setResult({ events, score, quarterScores, boxscore, starters, bench });
+      
+      // Detecta fim de jogo
+      if (events[events.length - 1] === '--- Fim do Jogo ---') {
+        setGameEnded(true);
+        setPaused(false); 
+      }
     });
+       
+
     setLoading(false);
   };
 
@@ -58,8 +69,10 @@ export default function MatchPage() {
       {result && (
         <div>
           <div style={{ margin: '1rem 0' }}>
-            {!paused ? (
+            {!paused && !gameEnded ? (
               <button onClick={handlePause} style={{ marginRight: '1rem' }}>⏸️ Pausar</button>
+            ) : gameEnded ? (
+              <button disabled style={{ marginRight: '1rem' }}>🏁 Encerrado</button>
             ) : (
               <>
                 <button onClick={() => setShowSubs(true)} style={{ marginRight: '1rem' }}>🔄 Substituições</button>

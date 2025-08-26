@@ -31,7 +31,22 @@ function sleep(ms: number) {
 // titulares (1 por posição)
 function getStarters(players: Player[]): Player[] {
     const positions = ["PG", "SG", "SF", "PF", "C"];
-    return positions.map(pos => players.find(p => p.position === pos)!).filter(Boolean);
+    const starters: Player[] = [];
+
+    positions.forEach(pos => {
+        const p = players.find(pl => pl.position === pos && !starters.includes(pl));
+        if (p) {
+            starters.push(p);
+        }
+    });
+
+    // Se ainda faltar algum titular, preenche com jogadores que sobraram
+    if (starters.length < 5) {
+        const remaining = players.filter(p => !starters.includes(p));
+        starters.push(...remaining.slice(0, 5 - starters.length));
+    }
+
+    return starters;
 }
 
 // Controle de pausa
@@ -220,7 +235,7 @@ export async function simulateMatchAsync(
             const benchA = bench[teamA.id];
             const benchB = bench[teamB.id];
             [...benchA, ...benchB].forEach(p => {
-                p.energy = Math.min(100, p.energy + 0.1);
+                p.energy = Math.min(100, p.energy + 0.25);
                 boxscore[p.teamId][p.name].energy = p.energy;
             });
 
@@ -228,13 +243,18 @@ export async function simulateMatchAsync(
             const onCourtA = starters[teamA.id];
             const onCourtB = starters[teamB.id];
             [...onCourtA, ...onCourtB].forEach(p => {
-                p.energy = Math.max(p.energy - 1);
+                p.energy = Math.max(0, p.energy - 1);
                 boxscore[p.teamId][p.name].energy = p.energy;
             });
 
             if (onUpdate) onUpdate([...events], { ...score }, { ...quarterScores }, { ...boxscore }, starters, bench);
         }
     }
+
+    // Final do jogo
+    events.push('--- Fim do Jogo ---');
+    if (onUpdate) onUpdate([...events], { ...score }, { ...quarterScores }, { ...boxscore }, starters, bench);
+
 
     return { score, quarterScores, events, boxscore, starters, bench };
 }
