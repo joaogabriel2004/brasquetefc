@@ -3,20 +3,54 @@ import { useState } from 'react';
 import { teams } from '../../data/teams';
 import { simulateMatchAsync, MatchResult, PlayerStats } from '../../utils/simulation';
 import Link from 'next/link';
+import { simulateMatchAsync, MatchResult, PlayerStats, pauseSimulation, resumeSimulation, substitutePlayer } from '../../utils/simulation';
 
 export default function MatchPage() {
   const [result, setResult] = useState<MatchResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [showSubs, setShowSubs] = useState(false);
+  const [gameEnded, setGameEnded] = useState(false);
 
   const handleSimulate = async () => {
     setLoading(true);
     setResult(null);
+    setGameEnded(false);
 
-    await simulateMatchAsync(teams[0], teams[1], (events, score, quarterScores, boxscore) => {
-      setResult({ events, score, quarterScores, boxscore });
+    await simulateMatchAsync(teams[0], teams[1], (events, score, quarterScores, boxscore, starters, bench) => {
+      setResult({ events, score, quarterScores, boxscore, starters, bench });
+      
+      // Detecta fim de jogo
+      if (events[events.length - 1] === '--- Fim do Jogo ---') {
+        setGameEnded(true);
+        setPaused(false); 
+      }
     });
 
     setLoading(false);
+  };
+
+  const handlePause = () => {
+    pauseSimulation();
+    setPaused(true);
+  };
+
+  const handleResume = () => {
+    resumeSimulation();
+    setPaused(false);
+    setShowSubs(false);
+  };
+
+  const handleSubstitute = (teamId: string, outPlayer: string, inPlayer: string) => {
+    if (!result) return;
+
+    const outP = result.starters[teamId].find(p => p.name === outPlayer);
+    const inP = result.bench[teamId].find(p => p.name === inPlayer);
+
+    if (!outP || !inP) return;
+
+    substitutePlayer(teamId, outP, inP, result.starters, result.bench);
+    setResult({ ...result }); // força atualização visual
   };
 
   return (
@@ -46,7 +80,6 @@ export default function MatchPage() {
             </div>
           </div>
         </div>
-
         {/* Simulate Button */}
         <div className="text-center mb-8">
           <button
