@@ -55,6 +55,7 @@ export default function MatchPage() {
                     <th>FG</th>
                     <th>3PT</th>
                     <th>FT</th>
+                    <th>Energy</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -67,6 +68,7 @@ export default function MatchPage() {
                         <td>{s.fgm}/{s.fga}</td>
                         <td>{s.tpm}/{s.tpa}</td>
                         <td>{s.ftm}/{s.fta}</td>
+                        <td>{s.energy}</td>
                       </tr>
                     );
                   })}
