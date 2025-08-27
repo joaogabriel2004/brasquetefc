@@ -1,12 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { teams } from '../../data/teams';
-<<<<<<< Updated upstream
-import { simulateMatchAsync, MatchResult, PlayerStats } from '../../utils/simulation';
-=======
 import { simulateMatchAsync, MatchResult, PlayerStats, pauseSimulation, resumeSimulation, substitutePlayer } from '../../utils/simulation';
 import Link from 'next/link';
->>>>>>> Stashed changes
 
 export default function MatchPage() {
   const [result, setResult] = useState<MatchResult | null>(null);
@@ -18,10 +14,6 @@ export default function MatchPage() {
   const handleSimulate = async () => {
     setLoading(true);
     setResult(null);
-<<<<<<< Updated upstream
-    await simulateMatchAsync(teams[0], teams[1], (events, score, quarterScores, boxscore) => {
-      setResult({ events, score, quarterScores, boxscore });
-=======
     await simulateMatchAsync(teams[0], teams[1], (events, score, quarterScores, boxscore, starters, bench) => {
       setResult({ events, score, quarterScores, boxscore, starters, bench });
 
@@ -30,7 +22,6 @@ export default function MatchPage() {
         setGameEnded(true);
         setPaused(false); 
       }
->>>>>>> Stashed changes
     });
     setLoading(false);
   };
@@ -58,24 +49,33 @@ export default function MatchPage() {
   };
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>Partida: {teams[0].name} vs {teams[1].name}</h1>
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-white to-orange-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-block mb-4 text-orange-600 hover:text-orange-700 transition-colors">
+            ← Voltar ao Menu
+          </Link>
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">
+            🏀 Arena de Partidas
+          </h1>
+        </div>
 
-      <button
-        onClick={handleSimulate}
-        disabled={loading}
-        style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}
-      >
-        {loading ? 'Simulando...' : 'Simular Partida'}
-      </button>
+        {/* Match Header */}
+        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+          <div className="flex flex-col md:flex-row items-center justify-between text-center">
+            <div className="flex-1 mb-4 md:mb-0">
+              <h2 className="text-2xl font-bold text-gray-800">{teams[0].name}</h2>
+              <p className="text-gray-600">{teams[0].players.length} jogadores</p>
+            </div>
+            <div className="text-4xl font-bold text-orange-600 mx-8">VS</div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-gray-800">{teams[1].name}</h2>
+              <p className="text-gray-600">{teams[1].players.length} jogadores</p>
+            </div>
+          </div>
+        </div>
 
-<<<<<<< Updated upstream
-      {result && (
-        <div>
-          <h2>Resultado Final</h2>
-          <p>{teams[0].name}: {result.score[teams[0].id]}</p>
-          <p>{teams[1].name}: {result.score[teams[1].id]}</p>
-=======
         {/* Buttons Area */}
         <div className="text-center mb-8">
           {!result && (
@@ -117,61 +117,61 @@ export default function MatchPage() {
             </>
           )}
         </div>
->>>>>>> Stashed changes
 
-          <h3>Placar por Período</h3>
-          <ul>
-            {result.quarterScores[teams[0].id].map((_, i) => (
-              <li key={i}>
-                Q{i+1} - {teams[0].name}: {result.quarterScores[teams[0].id][i]} | {teams[1].name}: {result.quarterScores[teams[1].id][i]}
-              </li>
-            ))}
-          </ul>
-          <br/>
-          <h3>Boxscore</h3>
-          {[teams[0], teams[1]].map(team => (
-            <div key={team.id} style={{ marginTop: '1rem' }}>
-              <h4>{team.name}</h4>
-              <table border={1} cellPadding={4} style={{ borderCollapse: 'collapse', width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th>Jogador</th>
-                    <th>PTS</th>
-                    <th>FG</th>
-                    <th>3PT</th>
-                    <th>FT</th>
-                    <th>Energy</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(result.boxscore[team.id]).map(([player, stats]) => {
-                    const s = stats as PlayerStats;
-                    return (
-                      <tr key={player}>
-                        <td>{player}</td>
-                        <td>{s.points}</td>
-                        <td>{s.fgm}/{s.fga}</td>
-                        <td>{s.tpm}/{s.tpa}</td>
-                        <td>{s.ftm}/{s.fta}</td>
-                        <td>{s.energy}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        {/* Results */}
+        {result && (
+          <div className="space-y-8">
+            {/* Final Score */}
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
+                🏆 Resultado Final
+              </h2>
+              <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8">
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold text-gray-700">{teams[0].name}</h3>
+                  <p className="text-4xl font-bold text-orange-600">{result.score[teams[0].id]}</p>
+                </div>
+                <div className="text-2xl font-bold text-gray-400">-</div>
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold text-gray-700">{teams[1].name}</h3>
+                  <p className="text-4xl font-bold text-blue-600">{result.score[teams[1].id]}</p>
+                </div>
+              </div>
             </div>
-<<<<<<< Updated upstream
-          ))}
-          <br/>
-          <h3>Eventos:</h3>
-          <ul>
-            {result.events.map((e, i) => (
-              <li key={i}>{e}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-=======
+
+            {/* Quarter Scores */}
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6">📊 Placar por Período</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="border border-gray-200 px-4 py-3 text-left font-semibold text-gray-700">Time</th>
+                      <th className="border border-gray-200 px-4 py-3 text-center font-semibold text-gray-700">Q1</th>
+                      <th className="border border-gray-200 px-4 py-3 text-center font-semibold text-gray-700">Q2</th>
+                      <th className="border border-gray-200 px-4 py-3 text-center font-semibold text-gray-700">Q3</th>
+                      <th className="border border-gray-200 px-4 py-3 text-center font-semibold text-gray-700">Q4</th>
+                      <th className="border border-gray-200 px-4 py-3 text-center font-semibold text-gray-700 bg-orange-50">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[teams[0], teams[1]].map((team, index) => (
+                      <tr key={team.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}>
+                        <td className="border border-gray-200 px-4 py-3 font-semibold text-gray-800">{team.name}</td>
+                        {result.quarterScores[team.id].map((score, i) => (
+                          <td key={i} className="border border-gray-200 px-4 py-3 text-center font-bold text-gray-800">
+                            {score}
+                          </td>
+                        ))}
+                        <td className="border border-gray-200 px-4 py-3 text-center font-bold text-lg bg-orange-50 text-orange-700">
+                          {result.score[team.id]}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
             {/* Boxscore */}
             <div className="bg-white rounded-xl shadow-lg p-8">
@@ -291,7 +291,6 @@ export default function MatchPage() {
           </div>
         )}
       </div>
->>>>>>> Stashed changes
     </div>
   );
 }
