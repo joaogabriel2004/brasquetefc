@@ -139,6 +139,52 @@ export default function MatchPage() {
               </div>
             </div>
 
+            {/* 🎯 Quadro Tático */}
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6">🎯 Quadro Tático</h3>
+              <div className="flex flex-col md:flex-row md:space-x-6 space-y-4 md:space-y-0">
+                
+                {/* Ritmo */}
+                <div className="flex-1">
+                  <label htmlFor="board-ritmo" className="block font-medium text-gray-700 mb-2">⚡ Ritmo</label>
+                  <select 
+                    id="board-ritmo"
+                    defaultValue="medio"
+                    className="w-full p-4 rounded-lg border-2 border-gray-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-300 text-gray-800 transition-colors bg-white hover:bg-orange-50">
+                    <option value="lento">Lento</option>
+                    <option value="medio">Médio</option>
+                    <option value="rapido">Rápido</option>
+                  </select>
+                </div>
+
+                {/* Foco */}
+                <div className="flex-1">
+                  <label htmlFor="board-foco" className="block font-medium text-gray-700 mb-2">🏀 Foco</label>
+                  <select 
+                    id="board-foco"
+                    defaultValue="garrafao"
+                    className="w-full p-4 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-300 text-gray-800 transition-colors bg-white hover:bg-blue-50">
+                    <option value="garrafao">Garrafão</option>
+                    <option value="perimetro">Perímetro</option>
+                  </select>
+                </div>
+
+                {/* Defesa */}
+                <div className="flex-1">
+                  <label htmlFor="board-defesa" className="block font-medium text-gray-700 mb-2">🛡️ Defesa</label>
+                  <select 
+                    id="board-defesa" 
+                    defaultValue="zona"
+                    className="w-full p-4 rounded-lg border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-300 text-gray-800 transition-colors bg-white hover:bg-green-50">
+                    <option value="homem">Homem a Homem</option>
+                    <option value="zona">Zona</option>
+                    <option value="mista">Mista</option>
+                  </select>
+                </div>
+
+              </div>
+            </div>
+
             {/* Quarter Scores */}
             <div className="bg-white rounded-xl shadow-lg p-8">
               <h3 className="text-2xl font-bold text-gray-800 mb-6">📊 Placar por Período</h3>
@@ -170,6 +216,21 @@ export default function MatchPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+
+            {/* Events Log */}
+            <div className="bg-white rounded-xl shadow-lg p-8">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6">📝 Relato da Partida</h3>
+              <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                <div className="space-y-2">
+                  {result.events.map((event, i) => (
+                    <div key={i} className="flex items-start space-x-2">
+                      <span className="text-orange-600 font-mono text-sm flex-shrink-0">#{i + 1}</span>
+                      <p className="text-gray-700 text-sm">{event}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -264,23 +325,9 @@ export default function MatchPage() {
               ))}
             </div>
 
-            {/* Events Log */}
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">📝 Relato da Partida</h3>
-              <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                <div className="space-y-2">
-                  {result.events.map((event, i) => (
-                    <div key={i} className="flex items-start space-x-2">
-                      <span className="text-orange-600 font-mono text-sm flex-shrink-0">#{i + 1}</span>
-                      <p className="text-gray-700 text-sm">{event}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
             {/* New Match Button */}
-            <div className="text-center">
+            {gameEnded && (
+              <div className="text-center">
               <button
                 onClick={handleSimulate}
                 className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
@@ -288,6 +335,8 @@ export default function MatchPage() {
                 🔄 Nova Partida
               </button>
             </div>
+            )}
+            
           </div>
         )}
       </div>
