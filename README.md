@@ -16,7 +16,7 @@ Brasquete é um jogo web de simulação de basquete inspirado no Brasfoot, volta
 
 ## 🏗️ Tecnologias
 
-- [Next.js](https://nextjs.org/) (App Router, TypeScript)
+- Next.js (App Router, TypeScript)
 - React.js
 - JavaScript/TypeScript
 - HTML/CSS
