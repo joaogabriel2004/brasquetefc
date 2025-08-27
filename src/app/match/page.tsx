@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { teams } from '../../data/teams';
-import { simulateMatchAsync, MatchResult, PlayerStats, pauseSimulation, resumeSimulation, substitutePlayer } from '../../utils/simulation';
+import {simulateMatchAsync, MatchResult, PlayerStats, pauseSimulation, resumeSimulation, substitutePlayer} from '../../utils/simulation';
 import Link from 'next/link';
 
 export default function MatchPage() {
@@ -88,11 +88,11 @@ export default function MatchPage() {
                   : 'bg-orange-600 hover:bg-orange-700 text-white hover:shadow-xl transform hover:scale-105'
               }`}
             >
-              {loading ? '🔄 Simulando Partida...' : '🏀 Simular Partida'}
+              🏀 Simular Partida
             </button>
           )}
 
-          {!paused && !gameEnded ? (
+          {!paused && !gameEnded && loading ? (
             <button 
               onClick={handlePause} 
               className={`font-bold py-4 px-8 rounded-xl text-xl transition-all duration-200 shadow-lg mr-4 bg-yellow-500 hover:bg-yellow-600 text-white hover:shadow-xl transform hover:scale-105`}
@@ -106,7 +106,7 @@ export default function MatchPage() {
             >
               🏁 Encerrado
             </button>
-          ) : (
+          ) : loading ? (
             <>
               <button 
                 onClick={handleResume}
@@ -115,7 +115,7 @@ export default function MatchPage() {
                 ▶️ Continuar
               </button>
             </>
-          )}
+          ) : null}
         </div>
 
         {/* Results */}
