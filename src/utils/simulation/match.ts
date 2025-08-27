@@ -86,7 +86,7 @@ export async function simulateMatchAsync(
       const possessionTime = Math.random() * (24 - 5) + 5;
       remainTime -= possessionTime;
 
-      await sleep(500);
+      await sleep(1);
       if (remainTime < 0) break;
 
       const minute = Math.floor(remainTime / 60);
@@ -109,26 +109,32 @@ export async function simulateMatchAsync(
       let points = 0;
       let chance = 0;
       let shotType = "";
+      const base = attacker.attack / (attacker.attack + defender.defense);
 
-      if (rand < 0.7) {
+      if (rand < 0.55) {
+        // 2 pontos
         points = 2;
         shotType = "2PT";
-        chance =
-          (attacker.attack / (attacker.attack + defender.defense)) *
-          (attacker.energy / 55);
+        const eFactor = 0.6 + 0.7 * (attacker.energy / 100); 
+        chance = (0.35 + 0.4 * base) * eFactor;
+        chance = Math.min(Math.max(chance, 0), 0.99); // clamp 0–99%
         stats.fga++;
-      } else if (rand < 0.95) {
+      } else if (rand < 0.85) {
+        // 3 pontos
         points = 3;
         shotType = "3PT";
-        chance =
-          ((attacker.attack * 0.8) / (attacker.attack + defender.defense)) *
-          (attacker.energy / 70);
+        const eFactor = 0.55 + 0.6 * (attacker.energy / 100);
+        chance = (0.18 + 0.25 * base) * eFactor;
+        chance = Math.min(Math.max(chance, 0), 0.99); // clamp 0–99%
         stats.fga++;
         stats.tpa++;
       } else {
+        // FT
         points = 1;
         shotType = "FT";
-        chance = attacker.energy / 100;
+        const eFactor = 0.7 + 0.3 * (attacker.energy / 100);
+        chance = (0.65 + (attacker.attack - 75) / 300) * eFactor;
+        chance = Math.min(Math.max(chance, 0.40), 0.90);
       }
 
       if (shotType === "FT") {
@@ -139,18 +145,10 @@ export async function simulateMatchAsync(
             stats.points += 1;
             stats.ftm += 1;
             stats.fta += 1;
-            events.push(
-              `[${minute}:${second < 10 ? "0" : ""}${second}] ${
-                attacker.name
-              } acerta um ${shotType}!`
-            );
+            events.push(`[${minute}:${second < 10 ? "0" : ""}${second}] ${attacker.name} acerta um ${shotType}!`);
           } else {
             stats.fta += 1;
-            events.push(
-              `[${minute}:${second < 10 ? "0" : ""}${second}] ${
-                attacker.name
-              } erra um ${shotType}.`
-            );
+            events.push(`[${minute}:${second < 10 ? "0" : ""}${second}] ${attacker.name} erra um ${shotType}.`);
           }
         }
       } else {
@@ -160,33 +158,38 @@ export async function simulateMatchAsync(
           stats.points += points;
           stats.fgm++;
           if (points === 3) stats.tpm++;
-          events.push(
-            `[${minute}:${second < 10 ? "0" : ""}${second}] ${
-              attacker.name
-            } marca ${points} pontos (${shotType}).`
-          );
+          events.push(`[${minute}:${second < 10 ? "0" : ""}${second}] ${attacker.name} marca ${points} pontos. {${chance*100}%}`);
         } else {
-          events.push(
-            `[${minute}:${second < 10 ? "0" : ""}${second}] ${
-              attacker.name
-            } erra um ${shotType}.`
-          );
+          events.push(`[${minute}:${second < 10 ? "0" : ""}${second}] ${attacker.name} erra um ${shotType}. {${chance*100}%}`);
         }
       }
 
       // Reduz energia do atacante
-      attacker.energy = Math.max(attacker.energy - 5, 0);
+      attacker.energy = Math.floor(attacker.energy - Math.random() * 3 - 1);
       stats.energy = attacker.energy;
 
       // Recuperação de energia no banco
       [...bench[teamA.id], ...bench[teamB.id]].forEach((p) => {
-        p.energy = Math.min(100, p.energy + 0.25);
+        p.energy = Math.min(100, p.energy + Math.floor(Math.random() * 2.75) + 0.25);
         boxscore[p.teamId][p.name].energy = p.energy;
+      });
+
+      [...starters[teamA.id], ...starters[teamB.id]].forEach((p) => {
+        if (p.energy < 30 && bench[p.teamId].length > 0) {
+          // substituição por cansaço (se houver banco)
+          const subInIndex = Math.floor(Math.random() * bench[p.teamId].length);
+          const subIn = bench[p.teamId][subInIndex];
+          bench[p.teamId].splice(subInIndex, 1);
+          bench[p.teamId].push(p);
+          starters[p.teamId] = starters[p.teamId].filter((pl) => pl !== p);
+          starters[p.teamId].push(subIn);
+          events.push(`* ${p.name} sai por cansaço. Entra ${subIn.name}. *`);
+        }
       });
 
       // Reduz energia dos titulares em quadra
       [...starters[teamA.id], ...starters[teamB.id]].forEach((p) => {
-        p.energy = Math.max(0, p.energy - 1);
+        p.energy = Math.max(0, p.energy - Math.floor(Math.random() * 1.75));
         boxscore[p.teamId][p.name].energy = p.energy;
       });
 
