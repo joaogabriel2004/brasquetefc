@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { teams } from '../../data/teams';
 import {simulateMatchAsync, MatchResult, PlayerStats, pauseSimulation, resumeSimulation, substitutePlayer} from '../../utils/simulation';
+import { setTactics } from "../../utils/simulation/tacticsControl";
 import Link from 'next/link';
 
 export default function MatchPage() {
@@ -10,6 +11,9 @@ export default function MatchPage() {
   const [paused, setPaused] = useState(false);
   const [showSubs, setShowSubs] = useState<string | null>(null);
   const [gameEnded, setGameEnded] = useState(false);
+  const [ritmo, setRitmo] = useState("medio");
+  const [foco, setFoco] = useState("perimetro");
+  const [defesa, setDefesa] = useState("homem");
 
   const handleSimulate = async () => {
     setLoading(true);
@@ -148,8 +152,13 @@ export default function MatchPage() {
                 <div className="flex-1">
                   <label htmlFor="board-ritmo" className="block font-medium text-gray-700 mb-2">⚡ Ritmo</label>
                   <select 
+                    value={ritmo}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setRitmo (newValue);
+                      setTactics({ ritmo: newValue })
+                    }}
                     id="board-ritmo"
-                    defaultValue="medio"
                     className="w-full p-4 rounded-lg border-2 border-gray-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-300 text-gray-800 transition-colors bg-white hover:bg-orange-50">
                     <option value="lento">Lento</option>
                     <option value="medio">Médio</option>
@@ -161,8 +170,13 @@ export default function MatchPage() {
                 <div className="flex-1">
                   <label htmlFor="board-foco" className="block font-medium text-gray-700 mb-2">🏀 Foco</label>
                   <select 
+                    value={foco}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setFoco (newValue);
+                      setTactics({ foco: newValue })
+                    }}
                     id="board-foco"
-                    defaultValue="garrafao"
                     className="w-full p-4 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-300 text-gray-800 transition-colors bg-white hover:bg-blue-50">
                     <option value="garrafao">Garrafão</option>
                     <option value="perimetro">Perímetro</option>
@@ -173,8 +187,13 @@ export default function MatchPage() {
                 <div className="flex-1">
                   <label htmlFor="board-defesa" className="block font-medium text-gray-700 mb-2">🛡️ Defesa</label>
                   <select 
+                    value={defesa}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setDefesa (newValue);
+                      setTactics({ defesa: newValue })
+                    }}
                     id="board-defesa" 
-                    defaultValue="zona"
                     className="w-full p-4 rounded-lg border-2 border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-300 text-gray-800 transition-colors bg-white hover:bg-green-50">
                     <option value="homem">Homem a Homem</option>
                     <option value="zona">Zona</option>
