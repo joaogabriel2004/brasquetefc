@@ -85,7 +85,7 @@ export async function simulateMatchAsync(
         await waitWhilePaused();
       }
 
-      const energyMultiplier = getTactics().ritmo === 'rapido' ? 0
+      const energyMultiplier = getTactics().ritmo === 'rapido' ? 1.3
                        : getTactics().ritmo === 'medio' ? 1.0 
                        : 0.7;
 
@@ -179,7 +179,7 @@ export async function simulateMatchAsync(
 
       // Reduz energia do atacante
       attacker.energy = Math.max(0, attacker.energy - Math.floor(Math.random() * 3 + 1) * energyMultiplier);
-      stats.energy = attacker.energy;
+      //stats.energy = attacker.energy;
 
       // Recuperação de energia no banco
       [...bench[teamA.id], ...bench[teamB.id]].forEach((p) => {
