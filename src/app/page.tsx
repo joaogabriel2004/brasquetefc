@@ -12,17 +12,23 @@ export default function HomePage() {
 
   // Função para obter jogadores por posição
   const getPlayersByPosition = (position: string) => {
-    return selectedTeam.players.filter(player => player.position === position);
+    return selectedTeam.players.filter(player => player.position === position);    
   };
 
   // Função para verificar se todos os titulares foram selecionados
   const isStarterLineupComplete = () => {
     const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
-    return positions.every(pos => 
-      starters.some(starterId => 
+    const hasAllPositions = positions.every(pos =>
+      starters.some(starterId =>
         selectedTeam.players.find(p => p.id === starterId)?.position === pos
       )
     );
+
+    // Se tiver todos, beleza
+    if (hasAllPositions) return true;
+
+    // Caso contrário, deixa passar se já tiver 5 titulares
+    return starters.length === 5;
   };
 
   // Função para selecionar/deselecionar titular
@@ -38,9 +44,17 @@ export default function HomePage() {
     if (starters.includes(playerId)) {
       // Remover dos titulares
       setStarters(starters.filter(id => id !== playerId));
-    } else if (currentStartersInPosition.length === 0) {
-      // Adicionar aos titulares (apenas se não há titular nesta posição)
-      setStarters([...starters, playerId]);
+    } else {
+      if (currentStartersInPosition.length === 0) {
+        // Se não tem titular na posição, adiciona normal
+        setStarters([...starters, playerId]);
+      } else {
+        // Caso já tenha alguém nessa posição,
+        // mas ainda não fechou os 5 titulares, permitir jogador "fora de posição"
+        if (starters.length < 5) {
+          setStarters([...starters, playerId]);
+        }
+      }
     }
   };
 
