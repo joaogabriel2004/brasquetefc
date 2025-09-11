@@ -86,10 +86,3 @@ MIT License. Veja o arquivo LICENSE para mais detalhes.
 ## 🤝 Contribuição
 
 Pull requests são bem-vindos! Para grandes mudanças, abra uma issue primeiro para discutir o que você quer mudar.
-
----
-
-## 🎯 Contato
-
-Desenvolvido por João Gabriel, André Lucas e Matheus Santos.  
-Email: joaogabrielsj2004@gmail.com, andrelucascoelho281@gmail.com e msantossilva005@gmail.com
