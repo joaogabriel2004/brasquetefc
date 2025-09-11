@@ -1,4 +1,5 @@
 import { Player } from "../../data/teams";
+import { getControlledTeamId } from './lineup';
 
 export function substitutePlayer(
   teamId: string,
@@ -7,6 +8,9 @@ export function substitutePlayer(
   starters: Record<string, Player[]>,
   bench: Record<string, Player[]>
 ) {
+  const controlledTeamId = getControlledTeamId();
+  if (teamId !== controlledTeamId) return;
+  
   // remove titular
   starters[teamId] = starters[teamId].filter(p => p.name !== outPlayer.name);
 
