@@ -4,19 +4,23 @@ import { randomChance, sleep } from "./utils";
 import { getStarters } from "./lineup";
 import { isPaused, waitWhilePaused } from "./pauseControl";
 import { getTactics } from "./tacticsControl";
+import { getControlledTeamId } from '../../utils/simulation/lineup';
 
 export async function simulateMatchAsync(
   teamA: Team, 
   teamB: Team, 
   onUpdate?: (
-  events: string[],
-  score: Record<string, number>,
-  quarterScores: Record<string, number[]>,
-  boxscore: Record<string, Record<string, PlayerStats>>,
-  starters: Record<string, Player[]>,
-  bench: Record<string, Player[]>
-  ) => void): Promise<MatchResult> {
-  
+    events: string[],
+    score: Record<string, number>,
+    quarterScores: Record<string, number[]>,
+    boxscore: Record<string, Record<string, PlayerStats>>,
+    starters: Record<string, Player[]>,
+    bench: Record<string, Player[]>
+  ) => void
+): Promise<MatchResult> {
+
+  const controlledTeamId = getControlledTeamId();
+
   // Pontuações & Estatisticas
   const score: Record<string, number> = {
     [teamA.id]: 0,
@@ -80,30 +84,33 @@ export async function simulateMatchAsync(
     let remainTime = quarterTime;
 
     while (remainTime > 0) {
-      // respeita pausa
       if (isPaused()) {
         await waitWhilePaused();
       }
-
-      const energyMultiplier = getTactics().ritmo === 'rapido' ? 1.3
-                       : getTactics().ritmo === 'medio' ? 1.0 
-                       : 0.7;
-
-      const possessionTime = Math.random() * (24 - 5) + 5;
-      remainTime -= possessionTime;
-
-      await sleep(1);
-      if (remainTime < 0) break;
-
-      const minute = Math.floor(remainTime / 60);
-      const second = Math.floor(remainTime % 60);
-
-      if (Math.random() < 0.1) continue; // posse desperdiçada
 
       const isTeamA = Math.random() < 0.5;
       const attackingTeam = isTeamA ? starters[teamA.id] : starters[teamB.id];
       const defendingTeam = isTeamA ? starters[teamB.id] : starters[teamA.id];
       const teamId = isTeamA ? teamA.id : teamB.id;
+
+      // táticas para cada time
+      const teamTactics = teamId === controlledTeamId 
+        ? getTactics()
+        : { ritmo: "medio", foco: "garrafao", defesa: "homem" }; // máquina
+
+      const energyMultiplier = teamTactics.ritmo === 'rapido' ? 1.3
+                             : teamTactics.ritmo === 'medio' ? 1.0 
+                             : 0.7;
+
+      const possessionTime = Math.random() * (24 - 5) + 5;
+      remainTime -= possessionTime;
+
+      await sleep(500);
+      if (remainTime < 0) break;
+
+      const minute = Math.floor(remainTime / 60);
+      const second = Math.floor(remainTime % 60);
+      if (Math.random() < 0.1) continue; // posse desperdiçada
 
       const attacker =
         attackingTeam[Math.floor(Math.random() * attackingTeam.length)];
@@ -116,33 +123,29 @@ export async function simulateMatchAsync(
       let chance = 0;
       let shotType = "";
 
-      let defenseFactor = getTactics().defesa === 'zona' ? 0.85 
-                    : getTactics().defesa === 'homem' ? 1.0 
-                    : 0.9;
+      const defenseFactor = teamTactics.defesa === 'zona' ? 0.85 
+                          : teamTactics.defesa === 'homem' ? 1.0 
+                          : 0.9;
+
       const base = (attacker.attack / (attacker.attack + defender.defense)) * defenseFactor;
 
-      let twoPtWeight = getTactics().foco === 'garrafao' ? 0.60 : 0.45;
-      let threePtWeight = getTactics().foco === 'perimetro' ? 0.45 : 0.25;
+      const twoPtWeight = teamTactics.foco === 'garrafao' ? 0.60 : 0.45;
+      const threePtWeight = teamTactics.foco === 'perimetro' ? 0.45 : 0.25;
 
       if (rand < twoPtWeight) {
-        // 2 pontos
         points = 2;
         shotType = "2PT";
         const eFactor = 0.6 + 0.7 * (attacker.energy / 100); 
         chance = (0.35 + 0.4 * base) * eFactor;
-        chance = Math.min(Math.max(chance, 0), 0.99); // clamp 0–99%
         stats.fga++;
       } else if (rand < twoPtWeight + threePtWeight) {
-        // 3 pontos
         points = 3;
         shotType = "3PT";
         const eFactor = 0.55 + 0.6 * (attacker.energy / 100);
         chance = (0.18 + 0.25 * base) * eFactor;
-        chance = Math.min(Math.max(chance, 0), 0.99); // clamp 0–99%
         stats.fga++;
         stats.tpa++;
       } else {
-        // FT
         points = 1;
         shotType = "FT";
         const eFactor = 0.7 + 0.3 * (attacker.energy / 100);
@@ -171,15 +174,14 @@ export async function simulateMatchAsync(
           stats.points += points;
           stats.fgm++;
           if (points === 3) stats.tpm++;
-          events.push(`[${minute}:${second < 10 ? "0" : ""}${second}] ${attacker.name} marca ${points} pontos. {${chance*100}%}`);
+          events.push(`[${minute}:${second < 10 ? "0" : ""}${second}] ${attacker.name} marca ${points} pontos.`);
         } else {
-          events.push(`[${minute}:${second < 10 ? "0" : ""}${second}] ${attacker.name} erra um ${shotType}. {${chance*100}%}`);
+          events.push(`[${minute}:${second < 10 ? "0" : ""}${second}] ${attacker.name} erra um ${shotType}.`);
         }
       }
 
       // Reduz energia do atacante
       attacker.energy = Math.max(0, attacker.energy - Math.floor(Math.random() * 3 + 1) * energyMultiplier);
-      //stats.energy = attacker.energy;
 
       // Recuperação de energia no banco
       [...bench[teamA.id], ...bench[teamB.id]].forEach((p) => {
@@ -187,9 +189,9 @@ export async function simulateMatchAsync(
         boxscore[p.teamId][p.name].energy = p.energy;
       });
 
+      // Substituições automáticas apenas para time da máquina
       [...starters[teamA.id], ...starters[teamB.id]].forEach((p) => {
-        if (p.energy < 30 && bench[p.teamId].length > 0) {
-          // substituição por cansaço (se houver banco)
+        if (p.teamId !== controlledTeamId && p.energy < 30 && bench[p.teamId].length > 0) {
           const subInIndex = Math.floor(Math.random() * bench[p.teamId].length);
           const subIn = bench[p.teamId][subInIndex];
           bench[p.teamId].splice(subInIndex, 1);
@@ -207,28 +209,14 @@ export async function simulateMatchAsync(
       });
 
       if (onUpdate)
-        onUpdate(
-          [...events],
-          { ...score },
-          { ...quarterScores },
-          { ...boxscore },
-          starters,
-          bench
-        );
+        onUpdate([...events], { ...score }, { ...quarterScores }, { ...boxscore }, starters, bench);
     }
   }
 
   // fim de jogo
   events.push("--- Fim do Jogo ---");
   if (onUpdate)
-    onUpdate(
-      [...events],
-      { ...score },
-      { ...quarterScores },
-      { ...boxscore },
-      starters,
-      bench
-    );
+    onUpdate([...events], { ...score }, { ...quarterScores }, { ...boxscore }, starters, bench);
 
   return { score, quarterScores, events, boxscore, starters, bench };
 }

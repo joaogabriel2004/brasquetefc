@@ -286,7 +286,16 @@ export default function HomePage() {
 
         {/* Start Match Button */}
         <div className="text-center">
-          <Link href="/match">
+          <Link 
+            href={{pathname: "/match"}}
+            onClick={() => {
+              const data = {
+                teamId: selectedTeam.id,
+                starters,
+              };
+              localStorage.setItem('matchSetup', JSON.stringify(data));
+            }}
+          >
             <button 
               className={`font-bold py-4 px-8 rounded-xl text-xl transition-all duration-200 shadow-lg ${
                 isStarterLineupComplete() || starters.length === 0

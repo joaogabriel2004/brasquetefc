@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { teams } from '../../data/teams';
 import {simulateMatchAsync, MatchResult, PlayerStats, pauseSimulation, resumeSimulation, substitutePlayer} from '../../utils/simulation';
 import { setTactics } from "../../utils/simulation/tacticsControl";
+import { getControlledTeamId } from '../../utils/simulation/lineup';
 import Link from 'next/link';
 
 export default function MatchPage() {
@@ -14,6 +15,9 @@ export default function MatchPage() {
   const [ritmo, setRitmo] = useState("medio");
   const [foco, setFoco] = useState("perimetro");
   const [defesa, setDefesa] = useState("homem");
+
+  const controlledTeamId = getControlledTeamId();
+  const controlledTeam = teams.find(t => t.id === controlledTeamId);
 
   const handleSimulate = async () => {
     setLoading(true);
@@ -281,12 +285,14 @@ export default function MatchPage() {
                                 <span className="font-bold text-green-600">● </span>
                                 <span>{player.name}</span>
                                 {/* Botão de substituição */}
-                                <button
-                                  onClick={() => setShowSubs(prev => prev === player.name ? null : player.name)}
-                                  className="ml-2 text-blue-600 hover:text-blue-800 text-sm cursor-pointer"
-                                >
-                                  ⇆
-                                </button>
+                                {controlledTeam && team.id === controlledTeam.id && (
+                                  <button
+                                    onClick={() => setShowSubs(prev => prev === player.name ? null : player.name)}
+                                    className="ml-2 text-blue-600 hover:text-blue-800 text-sm cursor-pointer"
+                                  >
+                                    ⇆
+                                  </button>
+                                )}
 
                                 {/* Select que aparece ao clicar */}
                                 {showSubs === player.name && (
