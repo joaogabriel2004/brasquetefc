@@ -1,5 +1,184 @@
-'use client';
+"use client";
 
+import { useState } from "react";
+import { teamsReal } from "@/data/teams";
+import { setupNewLeague } from "@/services/season/setupLeague";
+import { loadSaves } from '@/services/saves/loadSaves';
+import { selectSave } from "@/services/saves/selectSave";
+import { useRouter } from "next/navigation";
+
+export default function InicioPage() {
+  const router = useRouter();
+
+  const [showNewLeagueForm, setShowNewLeagueForm] = useState(false);
+  const [showContinueLeague, setContinueLeague] = useState(false);
+  const [coachName, setCoachName] = useState("");
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [saves, setSaves] = useState<any[]>([]);
+
+  async function handleCreateLeague() {
+    if (!selectedTeamId || !coachName.trim()) {
+      alert("Preencha o nome do técnico e escolha um time.");
+      return;
+    }
+
+    const saveId = crypto.randomUUID();
+    localStorage.setItem("currentSave", saveId);
+
+    await setupNewLeague(selectedTeamId, coachName, saveId);
+
+    router.push("/season");
+  }
+
+  async function handleContinueLeague() {
+    const allSaves = await loadSaves();
+    setSaves(allSaves);
+  }
+
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-white to-orange-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-12">
+          <h1 className="text-6xl font-bold text-orange-600 mb-4">
+            🏀 Brasquete
+          </h1>
+          <p className="text-xl text-gray-700 max-w-2xl mx-auto">
+            Bem-vindo ao Brasquete! Assuma o comando do seu time favorito.
+          </p>
+        </div>
+
+        {/* BOTÕES INICIAIS */}
+        {!showNewLeagueForm  && (
+          <div className="grid grid-cols-1 gap-6 max-w-md mx-auto mb-12">
+            <button
+              onClick={() => {
+                setShowNewLeagueForm(true);
+                setContinueLeague(false);
+              }}
+              className="bg-orange-100 hover:bg-orange-200 text-orange-800 font-semibold py-4 px-6 rounded-lg shadow-md transition cursor-pointer"
+            >
+              Nova Liga
+            </button>
+
+            <button
+              onClick={() => {
+                handleContinueLeague();
+                setContinueLeague(true);
+                setShowNewLeagueForm(false);
+              }}
+              className="bg-orange-100 hover:bg-orange-200 text-orange-800 font-semibold py-4 px-6 rounded-lg shadow-md transition cursor-pointer"
+            >
+              Continuar Liga
+            </button>
+          </div>
+        )}
+
+        {/* FORM NOVA LIGA */}
+        {showNewLeagueForm && (
+          <div className="bg-white rounded-xl shadow-lg p-8 max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+              Criar Nova Liga
+            </h2>
+
+            {/* Nome do técnico */}
+            <div className="mb-6">
+              <label className="block text-gray-700 font-semibold mb-2">
+                Nome do Técnico
+              </label>
+              <input
+                value={coachName}
+                onChange={(e) => setCoachName(e.target.value)}
+                placeholder="Ex: João Gabriel"
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-400 text-gray-800"
+              />
+            </div>
+
+            {/* Seleção do time */}
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                Escolha seu Time
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {teamsReal.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTeamId(t.id)}
+                    className={`py-3 px-4 rounded-lg font-semibold transition shadow-md cursor-pointer
+                      ${
+                        selectedTeamId === t.id
+                          ? "bg-orange-500 text-white"
+                          : "bg-orange-100 hover:bg-orange-200 text-orange-800"
+                      }
+                    `}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* AÇÕES */}
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={handleCreateLeague}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition cursor-pointer"
+              >
+                Criar Liga
+              </button>
+
+              <button
+                onClick={() => setShowNewLeagueForm(false)}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-8 rounded-lg shadow-md transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showContinueLeague && (
+          <div className="bg-white rounded-xl shadow-lg p-8 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6 text-center text-orange-600">
+              Ligas Salvas
+            </h2>
+
+            {saves.length === 0 && (
+              <p className="text-center text-gray-500">
+                Nenhuma liga encontrada
+              </p>
+            )}
+
+            <div className="flex flex-col gap-4">
+              {saves.map((save) => (
+                <button
+                  key={save.saveId}
+                  onClick={async () => {
+                    await selectSave(save.saveId);
+                    router.push("/season");
+                  }}
+                  className="border border-gray-300 hover:border-orange-400 rounded-lg p-4 hover:bg-orange-50 text-left text-orange-500 transition cursor-pointer"
+                >
+                  <p className="font-semibold">
+                    Save: {save.coachName}, {save.teamName}
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    Save criado em {new Date(save.createdAt).toLocaleDateString()}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+
+/*
 import Link from 'next/link';
 import { teams } from '../data/teams';
 import { useState } from 'react';
@@ -46,6 +225,7 @@ export default function HomePage() {
       setStarters(starters.filter(id => id !== playerId));
     } else {
       if (currentStartersInPosition.length === 0) {
+        if (starters.length >= 5) return; // impede mais de 5 titulares
         // Se não tem titular na posição, adiciona normal
         setStarters([...starters, playerId]);
       } else {
@@ -63,13 +243,21 @@ export default function HomePage() {
     const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
     const autoStarters = positions.map(pos => {
       const playersInPosition = getPlayersByPosition(pos);
-      // Selecionar o jogador com maior ataque + defesa
       return playersInPosition.sort((a, b) => 
         (b.attack + b.defense) - (a.attack + a.defense)
-      )[0]?.id;
+      )[0]?.id;      
     }).filter(Boolean);
     
     setStarters(autoStarters);
+
+    // Se ainda faltar algum titular, preenche com os melhores disponíveis
+    while (autoStarters.length < 5) {
+      const remaining = selectedTeam.players
+        .filter(p => !autoStarters.includes(p.id))
+        .sort((a, b) => (b.attack + b.defense) - (a.attack + a.defense));
+      if (remaining.length === 0) break;
+      autoStarters.push(remaining[0].id);
+    }
   };
 
   // Resetar titulares quando mudar de time
@@ -82,7 +270,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 via-white to-orange-50">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Header fechacoment}
         <div className="text-center mb-12">
           <h1 className="text-6xl font-bold text-orange-600 mb-4">
             🏀 Brasquete
@@ -92,7 +280,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Team Selection */}
+        {/* Team Selection fechacoment}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
             Escolha seu Time
@@ -135,7 +323,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Starter Selection */}
+        {/* Starter Selection fechacoment}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <h2 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">
@@ -221,7 +409,7 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Current Starters Display */}
+          {/* Current Starters Display fechacoment}
           <div className="mb-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">
               Quinteto Atual ({starters.length}/5)
@@ -284,7 +472,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Start Match Button */}
+        {/* Start Match Button fechacoment}
         <div className="text-center">
           <Link 
             href={{pathname: "/match"}}
@@ -317,3 +505,4 @@ export default function HomePage() {
     </div>
   );
 }
+*/
