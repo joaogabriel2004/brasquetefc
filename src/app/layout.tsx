@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "brasquetefc",
-  description: "Jogo de manager de basquete em dedsenvolvimento",
+  description: "Jogo de manager de basquete em desenvolvimento",
 };
 
 export default function RootLayout({
