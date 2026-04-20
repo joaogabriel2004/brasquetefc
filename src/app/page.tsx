@@ -22,8 +22,8 @@ export default function InicioPage() {
       return;
     }
 
-    const saveId = crypto.randomUUID();
-    localStorage.setItem("currentSave", saveId);
+    const saveId = Date.now().toString();
+    localStorage.setItem("currentSaveId", saveId);
 
     await setupNewLeague(selectedTeamId, coachName, saveId);
 
