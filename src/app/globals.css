@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.speed-control button {
+  margin: 0 5px;
+  color: black;
+  cursor: pointer;
+  padding: 5px;
+  border: #0a0a0a 1px solid;
+}
+
+.speed-control button:active {
+  font-weight: bold;
+  background-color: #0a0a0a;
+  color: white;
+}
