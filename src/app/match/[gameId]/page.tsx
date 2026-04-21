@@ -24,8 +24,9 @@ import {
 import { setTactics } from "@/utils/simulation/tacticsControl";
 import { setSimulationSpeed } from "@/utils/simulation/speedSimulation";
 
-export default function MatchPage({ params }: { params: { gameId: string } }) {
-  const { gameId } = params;
+export default function MatchPage() {
+  const params = useParams();
+  const gameId = params.gameId as string;
   const router = useRouter();
 
   const [db, setDb] = useState<any>(null);
@@ -86,8 +87,8 @@ export default function MatchPage({ params }: { params: { gameId: string } }) {
       const homeTeam = { ...home, players: homePlayers };
       const awayTeam = { ...away, players: awayPlayers };
 
-      setHomeTeam(home);
-      setAwayTeam(away);
+      setHomeTeam({ ...home, players: homePlayers });
+      setAwayTeam({ ...away, players: awayPlayers });
     }
 
     load();
