@@ -9,6 +9,8 @@ export type PlayerStats = {
   ftm: number;
   fta: number;
   energy: number;
+  rebounds: number;
+  assists: number;
 };
 
 export type MatchResult = {

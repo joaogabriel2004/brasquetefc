@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getBrasqueteDB } from "@/db/brasqueteDb";
 import { savesDb } from "@/db/savesDb";
 import { updateStandings } from "@/services/season/updateStandings";
+import { useParams } from "next/navigation";
 
 import {
   simulateMatchAsync,
@@ -23,8 +24,8 @@ import {
 import { setTactics } from "@/utils/simulation/tacticsControl";
 import { setSimulationSpeed } from "@/utils/simulation/speedSimulation";
 
-export default function MatchPage({ params }: any) {
-  const { gameId } = use(params);
+export default function MatchPage({ params }: { params: { gameId: string } }) {
+  const { gameId } = params;
   const router = useRouter();
 
   const [db, setDb] = useState<any>(null);
@@ -58,21 +59,39 @@ export default function MatchPage({ params }: any) {
       setDb(database);
 
       const game = await database.games.get(gameId);
+
+      if (!game) {
+        console.error("❌ Jogo não encontrado:", gameId);
+        return;
+      }
+
       const home = await database.teams.get(game.homeTeam);
       const away = await database.teams.get(game.awayTeam);
 
-      const homePlayers = await database.players.where("teamId").equals(home.id).toArray();
-      const awayPlayers = await database.players.where("teamId").equals(away.id).toArray();
+      if (!home || !away) {
+        console.error("❌ Times não encontrados");
+        return;
+      }
 
-      home.players = homePlayers;
-      away.players = awayPlayers;
+      const homePlayers = await database.players
+        .where("teamId")
+        .equals(home.id)
+        .toArray();
+
+      const awayPlayers = await database.players
+        .where("teamId")
+        .equals(away.id)
+        .toArray();
+
+      const homeTeam = { ...home, players: homePlayers };
+      const awayTeam = { ...away, players: awayPlayers };
 
       setHomeTeam(home);
       setAwayTeam(away);
     }
 
     load();
-  }, [gameId]);
+  }, [gameId]); 
 
   if (!homeTeam || !awayTeam) {
     return (
