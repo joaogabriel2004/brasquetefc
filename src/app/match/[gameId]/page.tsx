@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { getBrasqueteDB } from "@/db/brasqueteDb";
 import { savesDb } from "@/db/savesDb";
+import { updateStandings } from "@/services/season/updateStandings";
 
 import {
   simulateMatchAsync,
@@ -106,6 +107,15 @@ export default function MatchPage({ params }: any) {
             quarterScores,
             boxscore
         });
+
+        await db.games.update(gameId, {
+        played: true,
+        score,
+        quarterScores,
+        boxscore
+      });
+
+      await updateStandings(db, homeTeam.id, awayTeam.id, score);
 
         // atualiza stats dos jogadores no banco de dados
         for (const teamId of [homeTeam.id, awayTeam.id]) {

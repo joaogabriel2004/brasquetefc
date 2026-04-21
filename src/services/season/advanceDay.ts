@@ -1,5 +1,6 @@
 import { getBrasqueteDB } from "../../db/brasqueteDb";
 import { simulateGame } from "../season/simulateGame";
+import { updateStandings } from "../season/updateStandings";
 
 export async function advanceDay(saveId: string) {
   const db = getBrasqueteDB(saveId);
@@ -43,6 +44,15 @@ export async function advanceDay(saveId: string) {
       quarterScores: result.quarterScores,
       boxscore: result.boxscore
     });
+
+    await db.games.update(g.id, {
+      played: true,
+      score: result.score,
+      quarterScores: result.quarterScores,
+      boxscore: result.boxscore
+    });
+
+await updateStandings(db, homeTeam.id, awayTeam.id, result.score);
 
     for (const team of [homeTeam, awayTeam]) {
       for (const player of team.players) {
