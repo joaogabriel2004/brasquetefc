@@ -1,4 +1,4 @@
-import Dexie, { Table } from 'dexie';
+import Dexie, { Table } from "dexie";
 
 export type SaveMetaDB = {
   saveId: string;
@@ -14,10 +14,10 @@ class BrasqueteSavesDB extends Dexie {
   saves!: Table<SaveMetaDB, string>;
 
   constructor() {
-    super('BrasqueteSavesDB');
+    super("BrasqueteSavesDB");
 
     this.version(1).stores({
-      saves: 'saveId, coachName, teamId, season, lastPlayedAt'
+      saves: "saveId, coachName, teamId, season, lastPlayedAt",
     });
   }
 }

@@ -78,9 +78,6 @@ export class BrasqueteDB extends Dexie {
   }
 }
 
-/* =======================
-   FACTORY
-======================= */
 
 export function getBrasqueteDB(saveId: string) {
   return new BrasqueteDB(saveId);
