@@ -33,17 +33,24 @@ export type GameDB = {
   homeTeam: string;
   awayTeam: string;
   played: boolean;
+
   score?: {
     home: number;
     away: number;
   };
-  boxScore?: {
-    [playerId: string]: {
-      points: number;
-      rebounds: number;
-      assists: number;
-    };
-  };
+
+  quarterScores?: Record<string, number[]>;
+
+  boxscore?: Record<string, Record<string, {
+    points: number;
+    fgm: number;
+    fga: number;
+    tpm: number;
+    tpa: number;
+    ftm: number;
+    fta: number;
+    energy: number;
+  }>>;
 };
 
 export type LeagueDB = {

@@ -70,6 +70,8 @@ export async function simulateMatchAsync(
       ftm: 0,
       fta: 0,
       energy: p.energy,
+      assists: 0,
+      rebounds: 0
     };
   });
 
