@@ -57,6 +57,8 @@ export async function simulateGame(
     boxscore[p.teamId] = boxscore[p.teamId] || {};
     boxscore[p.teamId][p.name] = {
       points: 0,
+      rebounds: 0,
+      assists: 0,
       fgm: 0,
       fga: 0,
       tpm: 0,
