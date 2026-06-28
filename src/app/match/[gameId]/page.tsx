@@ -243,7 +243,7 @@ export default function MatchPage() {
             </div>
 
             {/* TÁTICAS */}
-            {controlledTeamId === homeTeam.id && (
+            {controlledTeamId === homeTeam.id || controlledTeamId === awayTeam.id && (
               <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-orange-300">
                 <h3 className="text-xl font-bold text-orange-600 mb-3">🎯 Táticas</h3>
 
@@ -373,6 +373,29 @@ export default function MatchPage() {
                             </td>
 
                           <td className="font-bold text-orange-600">{s.points}</td>
+                          <td>{s.fgm}/{s.fga}</td>
+                          <td>{s.tpm}/{s.tpa}</td>
+                          <td>{s.ftm}/{s.fta}</td>
+                          <td>
+                            <div className="w-full bg-gray-200 h-3 rounded">
+                              <div
+                                className="h-3 bg-green-500 rounded"
+                                style={{ width: `${s.energy}%` }}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {result.bench[team.id].map(player => {
+                      const s = result.boxscore[team.id][player.name] as PlayerStats;
+
+                      return (
+                        <tr key={player.name} className="border-b border-gray-200 text-gray-500">
+                          <td className="p-2">
+                            {player.position} {player.name}
+                          </td>
+                          <td className="font-bold text-gray-600">{s.points}</td>
                           <td>{s.fgm}/{s.fga}</td>
                           <td>{s.tpm}/{s.tpa}</td>
                           <td>{s.ftm}/{s.fta}</td>
