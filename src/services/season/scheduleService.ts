@@ -1,68 +1,57 @@
-// src/services/season/scheduleService.ts
-import { GameDB } from '../../db/brasqueteDb';
+import { GameDB } from "../../db/brasqueteDb";
 
-function shuffle<T>(array: T[]): T[] {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+export function generateDoubleRoundRobinSchedule(teamIds: string[]): GameDB[] {
+  const teams = [...teamIds];
+
+  if (teams.length % 2 !== 0) {
+    teams.push("DESCANSO");
   }
-  return arr;
-}
 
+  const totalTeams = teams.length;
+  const roundsPerTurn = totalTeams - 1;
+  const gamesPerRound = totalTeams / 2;
 
-export function generateDoubleRoundRobinSchedule(
-  teamIds: string[]
-): GameDB[] {
-  const shuffledTeams = shuffle(teamIds);
+  const firstTurn: GameDB[] = [];
+  let rotation = [...teams];
 
-  const games: GameDB[] = [];
+  for (let round = 1; round <= roundsPerTurn; round++) {
+    for (let i = 0; i < gamesPerRound; i++) {
+      const teamA = rotation[i];
+      const teamB = rotation[totalTeams - 1 - i];
 
-  let round = 1;
+      if (teamA !== "DESCANSO" && teamB !== "DESCANSO") {
+        const shouldSwapHome = round % 2 === 0;
+        const homeTeam = shouldSwapHome ? teamB : teamA;
+        const awayTeam = shouldSwapHome ? teamA : teamB;
 
-  for (let i = 0; i < shuffledTeams.length; i++) {
-    for (let j = i + 1; j < shuffledTeams.length; j++) {
-      // ida
-      games.push({
-        id: `${round}-${shuffledTeams[i]}-${shuffledTeams[j]}`,
-        round,
-        homeTeam: shuffledTeams[i],
-        awayTeam: shuffledTeams[j],
-        played: false,
-      });
-      round++;
-
-      // volta
-      games.push({
-        id: `${round}-${shuffledTeams[j]}-${shuffledTeams[i]}`,
-        round,
-        homeTeam: shuffledTeams[j],
-        awayTeam: shuffledTeams[i],
-        played: false,
-      });
-      round++;
+        firstTurn.push({
+          id: `R${round}-${homeTeam}-${awayTeam}`,
+          round,
+          homeTeam,
+          awayTeam,
+          played: false
+        });
+      }
     }
+
+    rotation = [
+      rotation[0],
+      rotation[totalTeams - 1],
+      ...rotation.slice(1, totalTeams - 1)
+    ];
   }
 
-  // embaralha ordem dos jogos e redistribui rounds
-  const shuffledGames = shuffle(games);
+  const secondTurn: GameDB[] = firstTurn.map((game) => {
+    const round = game.round + roundsPerTurn;
 
-  const matchdays = (teamIds.length - 1) * 2;
-  const gamesPerRound = teamIds.length / 2;
+    return {
+      id: `R${round}-${game.awayTeam}-${game.homeTeam}`,
+      round,
+      homeTeam: game.awayTeam,
+      awayTeam: game.homeTeam,
+      played: false
+    };
+  });
 
-  const finalGames: GameDB[] = [];
-  let idx = 0;
-
-  for (let r = 1; r <= matchdays; r++) {
-    for (let g = 0; g < gamesPerRound; g++) {
-      const game = shuffledGames[idx++];
-      finalGames.push({
-        ...game,
-        round: r,
-        id: `${r}-${game.homeTeam}-${game.awayTeam}`,
-      });
-    }
-  }
-
-  return finalGames;
+  return [...firstTurn, ...secondTurn];
 }
