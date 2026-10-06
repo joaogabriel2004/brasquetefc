@@ -133,6 +133,13 @@ export default function SeasonPage() {
           >
             Escalação e táticas
           </button>
+          <button
+            type="button"
+            onClick={() => router.push("/team/trades")}
+            className="ml-3 mt-4 rounded bg-orange-600 px-4 py-2 font-semibold text-white hover:bg-orange-700"
+          >
+            Negociar jogadores
+          </button>
         </div>
 
         {/* GRID PRINCIPAL */}
