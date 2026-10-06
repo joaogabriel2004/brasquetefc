@@ -17,7 +17,6 @@ import {
   renewPlayerContract,
   saveTeamManager,
   signFreeAgent,
-  tradePlayers,
 } from "@/services/season/teamManager";
 import { getPlayerAttributes } from "@/utils/simulation/playerRatings";
 
@@ -28,7 +27,6 @@ export default function TeamPage() {
   const [team, setTeam] = useState<TeamDB | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [freeAgents, setFreeAgents] = useState<Player[]>([]);
-  const [tradeOptions, setTradeOptions] = useState<Player[]>([]);
   const [payroll, setPayroll] = useState(0);
   const [trainingFocuses, setTrainingFocuses] = useState<
     Record<string, TrainingFocus>
@@ -38,8 +36,6 @@ export default function TeamPage() {
   const [shotPriorities, setShotPriorities] = useState<ShotPriorities>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [outgoingPlayerId, setOutgoingPlayerId] = useState("");
-  const [incomingPlayerId, setIncomingPlayerId] = useState("");
   const [marketMessage, setMarketMessage] = useState("");
 
   useEffect(() => {
@@ -60,7 +56,6 @@ export default function TeamPage() {
       setTeam(currentTeam);
       setPlayers(roster);
       setFreeAgents(data.freeAgents);
-      setTradeOptions(data.tradeOptions);
       setPayroll(data.payroll);
       setTrainingFocuses(
         Object.fromEntries(
@@ -176,53 +171,6 @@ export default function TeamPage() {
     setMarketMessage(`${player.name} renovou por 2 temporadas.`);
   }
 
-  async function handleTrade() {
-    const saveId = localStorage.getItem("currentSaveId");
-    if (!saveId || !team || !outgoingPlayerId || !incomingPlayerId) return;
-
-    const outgoing = players.find((player) => player.id === outgoingPlayerId);
-    const incoming = tradeOptions.find(
-      (player) => player.id === incomingPlayerId,
-    );
-    if (!outgoing || !incoming) return;
-
-    const completed = await tradePlayers(
-      saveId,
-      team.id,
-      outgoing.id,
-      incoming.id,
-    );
-    if (!completed) {
-      setMarketMessage("A troca excede o teto salarial de um dos times.");
-      return;
-    }
-
-    setPlayers([
-      ...players.filter((player) => player.id !== outgoing.id),
-      { ...incoming, teamId: team.id },
-    ]);
-    setTradeOptions([
-      ...tradeOptions.filter((player) => player.id !== incoming.id),
-      { ...outgoing, teamId: incoming.teamId },
-    ]);
-    setStarterIds(
-      starterIds.map((id) => (id === outgoing.id ? incoming.id : id)),
-    );
-    setTeam({
-      ...team,
-      playerIds: team.playerIds
-        .filter((id) => id !== outgoing.id)
-        .concat(incoming.id),
-      starterIds: team.starterIds?.map((id) =>
-        id === outgoing.id ? incoming.id : id,
-      ),
-    });
-    setPayroll(payroll - (outgoing.salary ?? 0) + (incoming.salary ?? 0));
-    setMarketMessage(`Troca concluída: ${outgoing.name} por ${incoming.name}.`);
-    setOutgoingPlayerId("");
-    setIncomingPlayerId("");
-  }
-
   if (!team)
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-100 via-white to-orange-50 flex items-center justify-center">
@@ -239,9 +187,12 @@ export default function TeamPage() {
             <p className="mb-1 text-xs font-bold uppercase tracking-widest text-orange-600">
               Sala do técnico
             </p>
-            <h1 className="text-3xl font-bold text-orange-600 md:text-4xl">{team.name}</h1>
+            <h1 className="text-3xl font-bold text-orange-600 md:text-4xl">
+              {team.name}
+            </h1>
             <p className="mt-1 text-sm text-gray-600">
-              Defina os cinco titulares e o plano de jogo para as próximas partidas.
+              Defina os cinco titulares e o plano de jogo para as próximas
+              partidas.
             </p>
           </div>
           <button
@@ -257,10 +208,14 @@ export default function TeamPage() {
           <section className="rounded-xl border border-orange-200 bg-white p-6 shadow space-y-6">
             <div>
               <div className="mb-3 flex items-baseline justify-between">
-                <h2 className="text-xl font-bold text-orange-600">Escalação titular</h2>
+                <h2 className="text-xl font-bold text-orange-600">
+                  Escalação titular
+                </h2>
                 <span
                   className={`text-sm font-semibold ${
-                    starterIds.length === 5 ? "text-green-700" : "text-orange-600"
+                    starterIds.length === 5
+                      ? "text-green-700"
+                      : "text-orange-600"
                   }`}
                 >
                   {starterIds.length} / 5 selecionados
@@ -317,7 +272,8 @@ export default function TeamPage() {
                           </span>
                           <span className="hidden text-xs text-gray-500 sm:inline">
                             ATA {player.attack} · DEF {player.defense} ·{" "}
-                            {player.age ?? "?"} anos · POT {player.potential ?? "?"}
+                            {player.age ?? "?"} anos · POT{" "}
+                            {player.potential ?? "?"}
                           </span>
                         </label>
 
@@ -346,7 +302,8 @@ export default function TeamPage() {
                               setSaved(false);
                               setTrainingFocuses({
                                 ...trainingFocuses,
-                                [player.id]: event.target.value as TrainingFocus,
+                                [player.id]: event.target
+                                  .value as TrainingFocus,
                               });
                             }}
                             className="rounded border border-orange-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-orange-500"
@@ -355,15 +312,23 @@ export default function TeamPage() {
                             <option value="criacao">Treino: criação</option>
                             <option value="defesa">Treino: defesa</option>
                             <option value="rebote">Treino: rebote</option>
-                            <option value="condicionamento">Treino: físico</option>
+                            <option value="condicionamento">
+                              Treino: físico
+                            </option>
                           </select>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap items-center justify-between text-xs text-gray-600">
                         <span>
-                          Salário <strong className="text-gray-800">{player.salary ?? 0}M</strong> · Contrato{" "}
-                          <strong className="text-gray-800">{player.contractYears ?? 0} anos</strong>
+                          Salário{" "}
+                          <strong className="text-gray-800">
+                            {player.salary ?? 0}M
+                          </strong>{" "}
+                          · Contrato{" "}
+                          <strong className="text-gray-800">
+                            {player.contractYears ?? 0} anos
+                          </strong>
                         </span>
                         <div className="flex gap-3">
                           {(player.contractYears ?? 0) <= 2 && (
@@ -391,13 +356,21 @@ export default function TeamPage() {
                         </summary>
                         <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3 text-gray-700">
                           <span>Finalização: {attributes.insideScoring}</span>
-                          <span>Meia distância: {attributes.midRangeShooting}</span>
+                          <span>
+                            Meia distância: {attributes.midRangeShooting}
+                          </span>
                           <span>3 pontos: {attributes.threePointShooting}</span>
-                          <span>Lance livre: {attributes.freeThrowShooting}</span>
+                          <span>
+                            Lance livre: {attributes.freeThrowShooting}
+                          </span>
                           <span>Criação: {attributes.playmaking}</span>
                           <span>Rebote: {attributes.rebounding}</span>
-                          <span>Defesa perímetro: {attributes.perimeterDefense}</span>
-                          <span>Defesa interior: {attributes.interiorDefense}</span>
+                          <span>
+                            Defesa perímetro: {attributes.perimeterDefense}
+                          </span>
+                          <span>
+                            Defesa interior: {attributes.interiorDefense}
+                          </span>
                           <span>Roubos: {attributes.steals}</span>
                           <span>Tocos: {attributes.blocks}</span>
                           <span>Resistência: {attributes.stamina}</span>
@@ -412,7 +385,9 @@ export default function TeamPage() {
 
           <aside className="space-y-6">
             <div className="rounded-xl border border-orange-200 bg-white p-6 shadow">
-              <h2 className="mb-4 text-xl font-bold text-orange-600">Plano de jogo</h2>
+              <h2 className="mb-4 text-xl font-bold text-orange-600">
+                Plano de jogo
+              </h2>
               <div className="space-y-4">
                 <label className="block text-sm font-semibold text-gray-700">
                   Ritmo
@@ -480,8 +455,8 @@ export default function TeamPage() {
                 {saving
                   ? "Salvando..."
                   : saved
-                  ? "Configuração salva"
-                  : "Salvar escalação e táticas"}
+                    ? "Configuração salva"
+                    : "Salvar escalação e táticas"}
               </button>
               {starterIds.length !== 5 && (
                 <p className="mt-2 text-xs text-orange-600 font-semibold">
@@ -495,10 +470,19 @@ export default function TeamPage() {
         <section className="rounded-xl border border-orange-200 bg-white p-6 shadow space-y-6">
           <div className="flex flex-wrap items-end justify-between gap-3 border-b border-orange-100 pb-4">
             <div>
-              <h2 className="text-xl font-bold text-orange-600">Mercado e contratos</h2>
+              <h2 className="text-xl font-bold text-orange-600">
+                Mercado e contratos
+              </h2>
               <p className="mt-1 text-sm text-gray-600">
-                Folha <strong className="text-gray-800">{payroll}M</strong> de <strong className="text-gray-800">{team.salaryCap ?? 160}M</strong> · Espaço salarial{" "}
-                <strong className="text-gray-800">{Math.max(0, (team.salaryCap ?? 160) - payroll)}M</strong> · Elenco{" "}
+                Folha <strong className="text-gray-800">{payroll}M</strong> de{" "}
+                <strong className="text-gray-800">
+                  {team.salaryCap ?? 160}M
+                </strong>{" "}
+                · Espaço salarial{" "}
+                <strong className="text-gray-800">
+                  {Math.max(0, (team.salaryCap ?? 160) - payroll)}M
+                </strong>{" "}
+                · Elenco{" "}
                 <strong className="text-gray-800">{players.length}/15</strong>
               </p>
             </div>
@@ -509,7 +493,7 @@ export default function TeamPage() {
             )}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
             <div className="space-y-3">
               <h3 className="font-bold text-orange-600">Agentes livres</h3>
               <div className="divide-y divide-orange-100 rounded border border-orange-200 bg-white max-h-80 overflow-y-auto p-2">
@@ -520,10 +504,14 @@ export default function TeamPage() {
                   >
                     <div>
                       <p className="font-semibold text-sm text-gray-800">
-                        <span className="text-orange-600">{player.position}</span> · {player.name}
+                        <span className="text-orange-600">
+                          {player.position}
+                        </span>{" "}
+                        · {player.name}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {player.age ?? "?"} anos · POT {player.potential ?? "?"} · {player.salary ?? 0}M
+                        {player.age ?? "?"} anos · POT {player.potential ?? "?"}{" "}
+                        · {player.salary ?? 0}M
                       </p>
                     </div>
                     <button
@@ -547,49 +535,14 @@ export default function TeamPage() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h3 className="font-bold text-orange-600">Troca direta</h3>
-              <div className="rounded border border-orange-200 bg-orange-50/30 p-4 space-y-3">
-                <select
-                  value={outgoingPlayerId}
-                  onChange={(event) => setOutgoingPlayerId(event.target.value)}
-                  className="w-full rounded border border-orange-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                >
-                  <option value="">Seu jogador</option>
-                  {players.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.name} · {player.salary ?? 0}M
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={incomingPlayerId}
-                  onChange={(event) => setIncomingPlayerId(event.target.value)}
-                  className="w-full rounded border border-orange-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                >
-                  <option value="">Jogador de outro time</option>
-                  {tradeOptions.map((player) => (
-                    <option key={player.id} value={player.id}>
-                      {player.name} · {player.salary ?? 0}M
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  type="button"
-                  disabled={!outgoingPlayerId || !incomingPlayerId}
-                  className="w-full rounded bg-orange-600 px-4 py-2 font-semibold text-white shadow hover:bg-orange-700 disabled:opacity-40"
-                  onClick={handleTrade}
-                >
-                  Confirmar troca
-                </button>
-
-                <p className="text-xs text-gray-500">
-                  A troca só é aceita se os dois times permanecerem dentro do teto salarial.
-                </p>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => router.push("/team/trades")}
+              className="flex items-center justify-center gap-3 rounded border border-orange-300 bg-orange-50 px-6 py-4 font-bold text-orange-700 hover:bg-orange-100"
+            >
+              <span aria-hidden="true">⇄</span>
+              Central de trocas
+            </button>
           </div>
         </section>
       </div>

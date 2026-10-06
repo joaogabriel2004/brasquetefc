@@ -11,6 +11,9 @@ export async function startNextSeason(saveId: string): Promise<boolean> {
   const nextSeason = league.season + 1;
   const teams = await db.teams.toArray();
   const players = await db.players.toArray();
+  const untaggedGames = await db.games
+    .filter((game) => game.season === undefined)
+    .toArray();
   const updatedPlayers = new Map<string, (typeof players)[number]>();
   const updatedTeams = new Map(
     teams.map((team) => [team.id, { ...team, wins: 0, losses: 0 }]),
@@ -99,6 +102,9 @@ export async function startNextSeason(saveId: string): Promise<boolean> {
       await Promise.all([
         ...[...updatedTeams.values()].map((team) => db.teams.put(team)),
         ...[...updatedPlayers.values()].map((player) => db.players.put(player)),
+        ...untaggedGames.map((game) =>
+          db.games.update(game.id, { season: league.season }),
+        ),
         ...games.map((game) => db.games.put(game)),
         db.league.update("main", {
           season: nextSeason,

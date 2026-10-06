@@ -9,7 +9,7 @@ export async function advanceDay(saveId: string) {
 
   const games = (
     await db.games.where("round").equals(league.currentRound).toArray()
-  ).filter((game) => (game.season ?? 1) === league.season);
+  ).filter((game) => (game.season ?? league.season) === league.season);
 
   for (const game of games) {
     if (game.played) continue;
@@ -34,7 +34,7 @@ export async function advanceDay(saveId: string) {
 
   const remainingGames = (
     await db.games.where("round").equals(league.currentRound).toArray()
-  ).filter((game) => (game.season ?? 1) === league.season);
+  ).filter((game) => (game.season ?? league.season) === league.season);
 
   if (
     remainingGames.length > 0 &&

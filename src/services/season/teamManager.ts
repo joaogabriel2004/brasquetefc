@@ -8,12 +8,14 @@ import {
 import type { PlayerDB, TeamDB } from "@/db/brasqueteDb";
 import { getBrasqueteDB } from "@/db/brasqueteDb";
 import { getPlayerAttributes } from "@/utils/simulation/playerRatings";
+import { evaluateTrade, type TradeEvaluation } from "./tradeEvaluation";
 
 export type TeamManagerData = {
   team: TeamDB;
   players: PlayerDB[];
   freeAgents: PlayerDB[];
   tradeOptions: PlayerDB[];
+  tradeTeams: TeamDB[];
   payroll: number;
 };
 
@@ -55,7 +57,10 @@ export async function loadTeamManager(
   const storedTeam = await db.teams.get(league.teamIdSelected);
   if (!storedTeam) return null;
 
-  const allPlayers = await db.players.toArray();
+  const [allPlayers, allTeams] = await Promise.all([
+    db.players.toArray(),
+    db.teams.toArray(),
+  ]);
   const existingIds = new Set(allPlayers.map((player) => player.id));
   const missingFreeAgents = freeAgentPool
     .filter((player) => !existingIds.has(player.id))
@@ -99,7 +104,14 @@ export async function loadTeamManager(
     (total, player) => total + (player.salary ?? 0),
     0,
   );
-  return { team, players, freeAgents, tradeOptions, payroll };
+  return {
+    team,
+    players,
+    freeAgents,
+    tradeOptions,
+    tradeTeams: allTeams.filter((candidate) => candidate.id !== team.id),
+    payroll,
+  };
 }
 
 export async function saveTeamManager(
@@ -217,29 +229,66 @@ export async function renewPlayerContract(
   });
 }
 
+export type TradeResult = {
+  accepted: boolean;
+  reason?: "invalid_proposal" | "ai_rejected" | "salary_cap" | "roster_size";
+  evaluation?: TradeEvaluation;
+};
+
 export async function tradePlayers(
   saveId: string,
   userTeamId: string,
-  outgoingPlayerId: string,
-  incomingPlayerId: string,
-): Promise<boolean> {
+  otherTeamId: string,
+  outgoingPlayerIds: string[],
+  incomingPlayerIds: string[],
+): Promise<TradeResult> {
   const db = getBrasqueteDB(saveId);
-  return db.transaction("rw", db.teams, db.players, async () => {
-    const [outgoing, incoming] = await Promise.all([
-      db.players.get(outgoingPlayerId),
-      db.players.get(incomingPlayerId),
-    ]);
-    if (!outgoing || !incoming || outgoing.teamId !== userTeamId) return false;
-    if (incoming.teamId === userTeamId || incoming.teamId === "free-agents")
-      return false;
+  if (
+    outgoingPlayerIds.length < 1 ||
+    incomingPlayerIds.length < 1 ||
+    outgoingPlayerIds.length > 3 ||
+    incomingPlayerIds.length > 3
+  )
+    return { accepted: false, reason: "invalid_proposal" };
 
-    const [userTeam, otherTeam, userRoster, otherRoster] = await Promise.all([
+  return db.transaction("rw", db.teams, db.players, async () => {
+    const [
+      userTeam,
+      otherTeam,
+      userRoster,
+      otherRoster,
+      outgoingResults,
+      incomingResults,
+    ] = await Promise.all([
       db.teams.get(userTeamId),
-      db.teams.get(incoming.teamId),
+      db.teams.get(otherTeamId),
       db.players.where("teamId").equals(userTeamId).toArray(),
-      db.players.where("teamId").equals(incoming.teamId).toArray(),
+      db.players.where("teamId").equals(otherTeamId).toArray(),
+      Promise.all(outgoingPlayerIds.map((id) => db.players.get(id))),
+      Promise.all(incomingPlayerIds.map((id) => db.players.get(id))),
     ]);
-    if (!userTeam || !otherTeam) return false;
+    if (!userTeam || !otherTeam) {
+      return { accepted: false, reason: "invalid_proposal" };
+    }
+
+    const outgoingPlayers = outgoingResults.filter(
+      (player): player is PlayerDB => player?.teamId === userTeamId,
+    );
+    const incomingPlayers = incomingResults.filter(
+      (player): player is PlayerDB => player?.teamId === otherTeamId,
+    );
+    if (
+      outgoingPlayers.length !== outgoingPlayerIds.length ||
+      incomingPlayers.length !== incomingPlayerIds.length ||
+      new Set(outgoingPlayerIds).size !== outgoingPlayerIds.length ||
+      new Set(incomingPlayerIds).size !== incomingPlayerIds.length
+    )
+      return { accepted: false, reason: "invalid_proposal" };
+
+    const evaluation = evaluateTrade(outgoingPlayers, incomingPlayers);
+    if (!evaluation.aiLikelyAccepts) {
+      return { accepted: false, reason: "ai_rejected", evaluation };
+    }
 
     const userPayroll = userRoster.reduce(
       (total, player) => total + (player.salary ?? 0),
@@ -249,33 +298,52 @@ export async function tradePlayers(
       (total, player) => total + (player.salary ?? 0),
       0,
     );
-    const newUserPayroll =
-      userPayroll - (outgoing.salary ?? 0) + (incoming.salary ?? 0);
-    const newOtherPayroll =
-      otherPayroll - (incoming.salary ?? 0) + (outgoing.salary ?? 0);
-    if (newUserPayroll > (userTeam.salaryCap ?? 160)) return false;
-    if (newOtherPayroll > (otherTeam.salaryCap ?? 160)) return false;
+    const outgoingSalary = evaluation.outgoingSalary;
+    const incomingSalary = evaluation.incomingSalary;
+    const userRosterSize =
+      userRoster.length - outgoingPlayers.length + incomingPlayers.length;
+    const otherRosterSize =
+      otherRoster.length - incomingPlayers.length + outgoingPlayers.length;
+    if (
+      userRosterSize < 5 ||
+      otherRosterSize < 5 ||
+      userRosterSize > 15 ||
+      otherRosterSize > 15
+    )
+      return { accepted: false, reason: "roster_size", evaluation };
+
+    const newUserPayroll = userPayroll - outgoingSalary + incomingSalary;
+    const newOtherPayroll = otherPayroll - incomingSalary + outgoingSalary;
+    if (
+      newUserPayroll > (userTeam.salaryCap ?? 160) ||
+      newOtherPayroll > (otherTeam.salaryCap ?? 160)
+    )
+      return { accepted: false, reason: "salary_cap", evaluation };
 
     await Promise.all([
-      db.players.update(outgoingPlayerId, { teamId: otherTeam.id }),
-      db.players.update(incomingPlayerId, { teamId: userTeam.id }),
+      ...outgoingPlayers.map((player) =>
+        db.players.update(player.id, { teamId: otherTeam.id }),
+      ),
+      ...incomingPlayers.map((player) =>
+        db.players.update(player.id, { teamId: userTeam.id }),
+      ),
       db.teams.update(userTeam.id, {
         playerIds: userTeam.playerIds
-          .filter((id) => id !== outgoingPlayerId)
-          .concat(incomingPlayerId),
-        starterIds: userTeam.starterIds?.map((id) =>
-          id === outgoingPlayerId ? incomingPlayerId : id,
+          .filter((id) => !outgoingPlayerIds.includes(id))
+          .concat(incomingPlayerIds),
+        starterIds: userTeam.starterIds?.filter(
+          (id) => !outgoingPlayerIds.includes(id),
         ),
       }),
       db.teams.update(otherTeam.id, {
         playerIds: otherTeam.playerIds
-          .filter((id) => id !== incomingPlayerId)
-          .concat(outgoingPlayerId),
-        starterIds: otherTeam.starterIds?.map((id) =>
-          id === incomingPlayerId ? outgoingPlayerId : id,
+          .filter((id) => !incomingPlayerIds.includes(id))
+          .concat(outgoingPlayerIds),
+        starterIds: otherTeam.starterIds?.filter(
+          (id) => !incomingPlayerIds.includes(id),
         ),
       }),
     ]);
-    return true;
+    return { accepted: true, evaluation };
   });
 }

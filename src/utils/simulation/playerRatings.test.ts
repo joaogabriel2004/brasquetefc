@@ -3,6 +3,10 @@ import test from "node:test";
 import type { Player, Team } from "../../data/teams.ts";
 import type { PlayerDB } from "../../db/brasqueteDb.ts";
 import { developPlayer } from "../../services/season/playerDevelopment.ts";
+import {
+  evaluateTrade,
+  playerTradeValue,
+} from "../../services/season/tradeEvaluation.ts";
 import { getStarters, selectShooter } from "./lineup.ts";
 import { simulateMatchAsync } from "./match.ts";
 import {
@@ -177,4 +181,63 @@ test("veteran players decline and age during offseason progression", () => {
   assert.equal(developed.age, 35);
   assert.equal(developed.attack, veteran.attack - 2);
   assert.equal(developed.contractYears, 1);
+});
+
+test("trade evaluation favors young high-potential players and explains the result", () => {
+  const outgoing: PlayerDB = {
+    ...createPlayer("veteran-trade", "SG"),
+    age: 35,
+    potential: 76,
+    salary: 5,
+    contractYears: 1,
+  };
+  const incoming: PlayerDB = {
+    ...createPlayer("young-star", "SF"),
+    attack: 95,
+    defense: 90,
+    age: 21,
+    potential: 99,
+    salary: 20,
+    contractYears: 4,
+  };
+
+  const evaluation = evaluateTrade([outgoing], [incoming]);
+
+  assert.equal(evaluation.verdict, "muito_vantajosa");
+  assert.equal(evaluation.aiLikelyAccepts, false);
+  assert.ok(evaluation.reasons.some((reason) => reason.includes("potencial")));
+  assert.equal(evaluation.incomingSalary, 20);
+});
+
+test("equal players produce a balanced trade recommendation", () => {
+  const first = {
+    ...createPlayer("first", "PG"),
+    age: 27,
+    potential: 80,
+    salary: 10,
+  };
+  const second = { ...first, id: "second" };
+
+  const evaluation = evaluateTrade([first], [second]);
+
+  assert.equal(evaluation.verdict, "equilibrada");
+  assert.equal(evaluation.aiLikelyAccepts, true);
+});
+
+test("salary burden lowers player trade value and packages sum all assets", () => {
+  const affordable: PlayerDB = {
+    ...createPlayer("affordable", "PG"),
+    age: 27,
+    potential: 80,
+    salary: 2,
+    contractYears: 2,
+  };
+  const expensive = { ...affordable, id: "expensive", salary: 20 };
+  const secondOutgoing = { ...affordable, id: "second-outgoing", attack: 70 };
+
+  assert.ok(playerTradeValue(affordable) > playerTradeValue(expensive));
+  assert.equal(
+    evaluateTrade([affordable, secondOutgoing], [expensive]).outgoingValue,
+    playerTradeValue(affordable) + playerTradeValue(secondOutgoing),
+  );
 });

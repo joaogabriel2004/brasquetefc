@@ -200,30 +200,6 @@ export default function SeasonPage() {
           </div>
         </div>
 
-        {/* JOGO DO USUÁRIO */}
-        <div className="bg-white p-6 rounded-xl shadow border border-orange-200">
-          <h2 className="text-xl font-bold text-orange-600 mb-3">
-            🎮 Seu jogo
-          </h2>
-
-          {myGame?.played ? (
-            <p className="font-bold text-green-700">
-              Partida concluída: {getGameScore(myGame, myGame.homeTeam, "home")}{" "}
-              x {getGameScore(myGame, myGame.awayTeam, "away")}
-            </p>
-          ) : myGame ? (
-            <button
-              type="button"
-              onClick={() => router.push(`/match/${myGame.id}`)}
-              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl font-bold shadow cursor-pointer"
-            >
-              Jogar partida
-            </button>
-          ) : (
-            <p>Nenhum jogo nesta rodada.</p>
-          )}
-        </div>
-
         {/* ESTATÍSTICAS DO ÚLTIMO JOGO */}
         <section className="bg-white p-6 rounded-xl shadow border border-orange-200">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
@@ -470,14 +446,34 @@ export default function SeasonPage() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              disabled={seasonActionBusy}
-              onClick={handleAdvanceDay}
-              className="bg-gray-800 hover:bg-black text-white px-8 py-3 rounded-xl font-bold shadow-lg disabled:opacity-50"
-            >
-              {seasonActionBusy ? "Simulando rodada..." : "⏭️ Avançar rodada"}
-            </button>
+            <div className="space-x-3">
+              {myGame?.played ? (
+                <p className="font-bold text-green-700">
+                  Partida concluída:{" "}
+                  {getGameScore(myGame, myGame.homeTeam, "home")} x{" "}
+                  {getGameScore(myGame, myGame.awayTeam, "away")}
+                </p>
+              ) : myGame ? (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/match/${myGame.id}`)}
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl font-bold shadow cursor-pointer"
+                >
+                  🏀 Jogar partida
+                </button>
+              ) : (
+                <p>Nenhum jogo nesta rodada.</p>
+              )}
+
+              <button
+                type="button"
+                disabled={seasonActionBusy}
+                onClick={handleAdvanceDay}
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg disabled:opacity-50"
+              >
+                {seasonActionBusy ? "Simulando rodada..." : "⏭️ Avançar rodada"}
+              </button>
+            </div>
           )}
         </div>
       </div>

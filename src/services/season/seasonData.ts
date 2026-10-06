@@ -23,7 +23,9 @@ export async function loadSeasonDashboard(
       .equals(league.currentRound)
       .toArray()
       .then((items) =>
-        items.filter((game) => (game.season ?? 1) === league.season),
+        items.filter(
+          (game) => (game.season ?? league.season) === league.season,
+        ),
       ),
     db.teams.toArray(),
     db.players.toArray(),
@@ -39,7 +41,8 @@ export async function loadSeasonDashboard(
 
   seasonGames.sort(
     (left, right) =>
-      (right.season ?? 1) - (left.season ?? 1) || right.round - left.round,
+      (right.season ?? league.season) - (left.season ?? league.season) ||
+      right.round - left.round,
   );
 
   return {
