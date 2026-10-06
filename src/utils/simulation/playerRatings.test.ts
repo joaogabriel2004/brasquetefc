@@ -2,18 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { Player, Team } from "../../data/teams.ts";
 import type { PlayerDB } from "../../db/brasqueteDb.ts";
-import { developPlayer } from "../../services/season/playerDevelopment.ts";
+import { developPlayer } from "../../services/season/playerDevelopment.js";
 import {
   evaluateTrade,
   playerTradeValue,
-} from "../../services/season/tradeEvaluation.ts";
-import { getStarters, selectShooter } from "./lineup.ts";
-import { simulateMatchAsync } from "./match.ts";
+} from "../../services/season/tradeEvaluation.js";
+import { getStarters, selectShooter } from "./lineup.js";
+import { simulateMatchAsync } from "./match.js";
 import {
   getFatigueFactor,
   getPlayerAttributes,
   shotAccuracy,
-} from "./playerRatings.ts";
+} from "./playerRatings.js";
 
 function createPlayer(
   id: string,
