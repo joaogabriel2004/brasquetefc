@@ -1,4 +1,10 @@
-import Dexie, { Table } from 'dexie';
+import Dexie, { type Table } from "dexie";
+import type {
+  PlayerAttributes,
+  ShotPriorities,
+  Tactics,
+  TrainingFocus,
+} from "../data/teams";
 
 /* =======================
    TYPES
@@ -7,11 +13,17 @@ import Dexie, { Table } from 'dexie';
 export type PlayerDB = {
   id: string;
   name: string;
-  position: 'PG' | 'SG' | 'SF' | 'PF' | 'C';
+  position: "PG" | "SG" | "SF" | "PF" | "C";
   attack: number;
   defense: number;
   energy: number;
   teamId: string;
+  attributes?: PlayerAttributes;
+  age?: number;
+  potential?: number;
+  salary?: number;
+  contractYears?: number;
+  trainingFocus?: TrainingFocus;
   statsSeason?: {
     points: number;
     rebounds: number;
@@ -25,32 +37,48 @@ export type TeamDB = {
   playerIds: string[];
   wins: number;
   losses: number;
+  starterIds?: string[];
+  tactics?: Tactics;
+  shotPriorities?: ShotPriorities;
+  salaryCap?: number;
 };
 
 export type GameDB = {
   id: string;
+  season?: number;
   round: number;
   homeTeam: string;
   awayTeam: string;
   played: boolean;
 
-  score?: {
-    home: number;
-    away: number;
-  };
+  score?: Record<string, number>;
 
   quarterScores?: Record<string, number[]>;
 
-  boxscore?: Record<string, Record<string, {
-    points: number;
-    fgm: number;
-    fga: number;
-    tpm: number;
-    tpa: number;
-    ftm: number;
-    fta: number;
-    energy: number;
-  }>>;
+  boxscore?: Record<
+    string,
+    Record<
+      string,
+      {
+        points: number;
+        fgm: number;
+        fga: number;
+        twoPM: number;
+        twoPA: number;
+        tpm: number;
+        tpa: number;
+        ftm: number;
+        fta: number;
+        energy: number;
+        rebounds: number;
+        assists: number;
+        turnovers: number;
+        steals: number;
+        blocks: number;
+        fouls?: number;
+      }
+    >
+  >;
 };
 
 export type LeagueDB = {
@@ -77,14 +105,20 @@ export class BrasqueteDB extends Dexie {
     super(`BrasqueteDB_${saveId}`);
 
     this.version(1).stores({
-      teams: 'id, name',
-      players: 'id, teamId, name',
-      games: 'id, round, homeTeam, awayTeam',
-      league: 'id'
+      teams: "id, name",
+      players: "id, teamId, name",
+      games: "id, round, homeTeam, awayTeam",
+      league: "id",
+    });
+
+    this.version(2).stores({
+      teams: "id, name",
+      players: "id, teamId, name",
+      games: "id, round, season, homeTeam, awayTeam",
+      league: "id",
     });
   }
 }
-
 
 export function getBrasqueteDB(saveId: string) {
   return new BrasqueteDB(saveId);

@@ -1,9 +1,11 @@
-import { Player } from "../../data/teams";
+import type { Player } from "../../data/teams";
 
 export type PlayerStats = {
   points: number;
   fgm: number;
   fga: number;
+  twoPM: number;
+  twoPA: number;
   tpm: number;
   tpa: number;
   ftm: number;
@@ -11,6 +13,10 @@ export type PlayerStats = {
   energy: number;
   rebounds: number;
   assists: number;
+  turnovers: number;
+  steals: number;
+  blocks: number;
+  fouls: number;
 };
 
 export type MatchResult = {

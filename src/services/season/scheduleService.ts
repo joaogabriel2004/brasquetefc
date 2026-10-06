@@ -1,4 +1,4 @@
-import { GameDB } from "../../db/brasqueteDb";
+import type { GameDB } from "../../db/brasqueteDb";
 
 export function generateDoubleRoundRobinSchedule(teamIds: string[]): GameDB[] {
   const teams = [...teamIds];
@@ -29,7 +29,7 @@ export function generateDoubleRoundRobinSchedule(teamIds: string[]): GameDB[] {
           round,
           homeTeam,
           awayTeam,
-          played: false
+          played: false,
         });
       }
     }
@@ -37,7 +37,7 @@ export function generateDoubleRoundRobinSchedule(teamIds: string[]): GameDB[] {
     rotation = [
       rotation[0],
       rotation[totalTeams - 1],
-      ...rotation.slice(1, totalTeams - 1)
+      ...rotation.slice(1, totalTeams - 1),
     ];
   }
 
@@ -49,7 +49,7 @@ export function generateDoubleRoundRobinSchedule(teamIds: string[]): GameDB[] {
       round,
       homeTeam: game.awayTeam,
       awayTeam: game.homeTeam,
-      played: false
+      played: false,
     };
   });
 

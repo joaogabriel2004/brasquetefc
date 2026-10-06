@@ -1,10 +1,10 @@
-import { BrasqueteDB } from "@/db/brasqueteDb";
+import type { BrasqueteDB } from "@/db/brasqueteDb";
 
 export async function updateStandings(
   db: BrasqueteDB,
   homeTeamId: string,
   awayTeamId: string,
-  score: Record<string, number>
+  score: Record<string, number>,
 ) {
   const homeScore = score[homeTeamId];
   const awayScore = score[awayTeamId];
@@ -17,21 +17,20 @@ export async function updateStandings(
   if (homeScore > awayScore) {
     // vitória mandante
     await db.teams.update(homeTeamId, {
-      wins: (homeTeam.wins ?? 0) + 1
+      wins: (homeTeam.wins ?? 0) + 1,
     });
 
     await db.teams.update(awayTeamId, {
-      losses: (awayTeam.losses ?? 0) + 1
+      losses: (awayTeam.losses ?? 0) + 1,
     });
-
   } else {
     // vitória visitante
     await db.teams.update(awayTeamId, {
-      wins: (awayTeam.wins ?? 0) + 1
+      wins: (awayTeam.wins ?? 0) + 1,
     });
 
     await db.teams.update(homeTeamId, {
-      losses: (homeTeam.losses ?? 0) + 1
+      losses: (homeTeam.losses ?? 0) + 1,
     });
   }
 }

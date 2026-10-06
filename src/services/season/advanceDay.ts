@@ -1,87 +1,56 @@
 import { getBrasqueteDB } from "../../db/brasqueteDb";
-import { simulateGame } from "../season/simulateGame";
-import { updateStandings } from "../season/updateStandings";
+import { recordMatchResult } from "./matchData";
+import { simulateGame } from "./simulateGame";
 
 export async function advanceDay(saveId: string) {
   const db = getBrasqueteDB(saveId);
-
   const league = await db.league.get("main");
-  if (!league) {
-    console.error("League não encontrada");
-    return;
-  }
+  if (!league) return;
 
-  const games = await db.games
-    .where("round")
-    .equals(league.currentRound)
-    .toArray();
+  const games = (
+    await db.games.where("round").equals(league.currentRound).toArray()
+  ).filter((game) => (game.season ?? 1) === league.season);
 
-  for (const g of games) {
-    if (g.played) continue;
+  for (const game of games) {
+    if (game.played) continue;
 
-    const homeTeam = await db.teams.get(g.homeTeam);
-    const awayTeam = await db.teams.get(g.awayTeam);
-
+    const [homeTeam, awayTeam] = await Promise.all([
+      db.teams.get(game.homeTeam),
+      db.teams.get(game.awayTeam),
+    ]);
     if (!homeTeam || !awayTeam) continue;
 
-    const homePlayers = await db.players.where("teamId").equals(homeTeam.id).toArray();
-    const awayPlayers = await db.players.where("teamId").equals(awayTeam.id).toArray();
+    const [homePlayers, awayPlayers] = await Promise.all([
+      db.players.where("teamId").equals(homeTeam.id).toArray(),
+      db.players.where("teamId").equals(awayTeam.id).toArray(),
+    ]);
 
-    const homeTeamFull = {
-      ...homeTeam,
-      players: homePlayers
-    };
+    const result = await simulateGame(
+      { ...homeTeam, players: homePlayers },
+      { ...awayTeam, players: awayPlayers },
+    );
+    await recordMatchResult(saveId, game.id, homeTeam.id, awayTeam.id, result);
+  }
 
-    const awayTeamFull = {
-      ...awayTeam,
-      players: awayPlayers
-    };
+  const remainingGames = (
+    await db.games.where("round").equals(league.currentRound).toArray()
+  ).filter((game) => (game.season ?? 1) === league.season);
 
-    const result = await simulateGame(homeTeamFull, awayTeamFull);
+  if (
+    remainingGames.length > 0 &&
+    remainingGames.every((game) => game.played)
+  ) {
+    const roster = await db.players.toArray();
+    await Promise.all(
+      roster.map((player) =>
+        db.players.update(player.id, {
+          energy: Math.min(100, (player.energy ?? 100) + 18),
+        }),
+      ),
+    );
 
-    if (!result) {
-      console.error("Simulação falhou", g.id);
-      continue;
-    }
-
-    await db.games.update(g.id, {
-      played: true,
-      score: {
-        home: result.score[homeTeam.id],
-        away: result.score[awayTeam.id]
-      },
-      quarterScores: result.quarterScores,
-      boxscore: result.boxscore
+    await db.league.update("main", {
+      currentRound: league.currentRound + 1,
     });
-
-    await updateStandings(db, homeTeam.id, awayTeam.id, result.score);
-
-        const teamsData = [
-      { team: homeTeam, players: homePlayers },
-      { team: awayTeam, players: awayPlayers }
-    ];
-
-    for (const { team, players } of teamsData) {
-      for (const player of players) {
-        const stats = result.boxscore[team.id][player.name];
-        if (!stats) continue;
-
-        await db.players.update(player.id, {
-          statsSeason: {
-            points: (player.statsSeason?.points ?? 0) + stats.points,
-            rebounds: (player.statsSeason?.rebounds ?? 0) + (stats.rebounds ?? 0),
-            assists: (player.statsSeason?.assists ?? 0) + (stats.assists ?? 0),
-          },
-          energy: stats.energy
-        });
-      }
-    }
-
-  // 🔁 avança rodada
-  await db.league.update("main", {
-    currentRound: league.currentRound + 1
-  });
-
-  console.log("Rodada avançada com sucesso");
   }
 }

@@ -1,11 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { teamsReal } from "@/data/teams";
-import { setupNewLeague } from "@/services/season/setupLeague";
-import { loadSaves } from '@/services/saves/loadSaves';
+import type { SaveMetaDB } from "@/db/savesDb";
+import { loadSaves } from "@/services/saves/loadSaves";
 import { selectSave } from "@/services/saves/selectSave";
-import { useRouter } from "next/navigation";
+import { setupNewLeague } from "@/services/season/setupLeague";
 
 export default function InicioPage() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function InicioPage() {
   const [showContinueLeague, setContinueLeague] = useState(false);
   const [coachName, setCoachName] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
-  const [saves, setSaves] = useState<any[]>([]);
+  const [saves, setSaves] = useState<SaveMetaDB[]>([]);
 
   async function handleCreateLeague() {
     if (!selectedTeamId || !coachName.trim()) {
@@ -35,7 +36,6 @@ export default function InicioPage() {
     setSaves(allSaves);
   }
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-100 via-white to-orange-50">
       <div className="container mx-auto px-4 py-8">
@@ -49,9 +49,10 @@ export default function InicioPage() {
         </div>
 
         {/* BOTÕES INICIAIS */}
-        {!showNewLeagueForm  && (
+        {!showNewLeagueForm && (
           <div className="grid grid-cols-1 gap-6 max-w-md mx-auto mb-12">
             <button
+              type="button"
               onClick={() => {
                 setShowNewLeagueForm(true);
                 setContinueLeague(false);
@@ -62,6 +63,7 @@ export default function InicioPage() {
             </button>
 
             <button
+              type="button"
               onClick={() => {
                 handleContinueLeague();
                 setContinueLeague(true);
@@ -83,10 +85,14 @@ export default function InicioPage() {
 
             {/* Nome do técnico */}
             <div className="mb-6">
-              <label className="block text-gray-700 font-semibold mb-2">
+              <label
+                htmlFor="coach-name"
+                className="block text-gray-700 font-semibold mb-2"
+              >
                 Nome do Técnico
               </label>
               <input
+                id="coach-name"
                 value={coachName}
                 onChange={(e) => setCoachName(e.target.value)}
                 placeholder="Ex: João Gabriel"
@@ -103,6 +109,7 @@ export default function InicioPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {teamsReal.map((t) => (
                   <button
+                    type="button"
                     key={t.id}
                     onClick={() => setSelectedTeamId(t.id)}
                     className={`py-3 px-4 rounded-lg font-semibold transition shadow-md cursor-pointer
@@ -122,6 +129,7 @@ export default function InicioPage() {
             {/* AÇÕES */}
             <div className="flex gap-4 justify-center">
               <button
+                type="button"
                 onClick={handleCreateLeague}
                 className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition cursor-pointer"
               >
@@ -129,6 +137,7 @@ export default function InicioPage() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setShowNewLeagueForm(false)}
                 className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-8 rounded-lg shadow-md transition cursor-pointer"
               >
@@ -153,6 +162,7 @@ export default function InicioPage() {
             <div className="flex flex-col gap-4">
               {saves.map((save) => (
                 <button
+                  type="button"
                   key={save.saveId}
                   onClick={async () => {
                     await selectSave(save.saveId);
@@ -164,7 +174,8 @@ export default function InicioPage() {
                     Save: {save.coachName}, {save.teamName}
                   </p>
                   <p className="text-sm text-gray-400">
-                    Save criado em {new Date(save.createdAt).toLocaleDateString()}
+                    Save criado em{" "}
+                    {new Date(save.createdAt).toLocaleDateString()}
                   </p>
                 </button>
               ))}
@@ -175,8 +186,6 @@ export default function InicioPage() {
     </div>
   );
 }
-
-
 
 /*
 import Link from 'next/link';

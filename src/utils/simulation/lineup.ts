@@ -1,48 +1,17 @@
-import { Player } from "../../data/teams";
-
-/* =========================================================
-   🧠 CONTROLE DO TIME DO JOGADOR (GLOBAL EM MEMÓRIA)
-   ========================================================= */
-
-let controlledTeamId: string | null = null;
-
-export function setControlledTeamId(id: string) {
-  controlledTeamId = id;
-}
-
-export function getControlledTeamId(): string | null {
-  return controlledTeamId;
-}
+import type { Player, ShotPriorities } from "../../data/teams";
 
 /* =========================================================
    🏀 DEFINIÇÃO DOS TITULARES
    ========================================================= */
 
-export function getStarters(players: Player[]): Player[] {
+export function getStarters(
+  players: Player[],
+  starterIds?: string[],
+): Player[] {
   const positions = ["PG", "SG", "SF", "PF", "C"];
-  const starters: Player[] = [];
-
-  // 🔹 1. Tenta recuperar lineup salvo no localStorage
-  if (typeof window !== "undefined") {
-    const storedLineup = localStorage.getItem("matchSetup");
-
-    if (storedLineup) {
-      try {
-        const parsed = JSON.parse(storedLineup);
-
-        if (parsed.starters && Array.isArray(parsed.starters)) {
-          parsed.starters.forEach((starterId: string) => {
-            const player = players.find((p) => p.id === starterId);
-            if (player && !starters.includes(player)) {
-              starters.push(player);
-            }
-          });
-        }
-      } catch (e) {
-        console.error("Erro ao ler lineup do localStorage:", e);
-      }
-    }
-  }
+  const starters = (starterIds ?? [])
+    .map((starterId) => players.find((player) => player.id === starterId))
+    .filter((player): player is Player => player !== undefined);
 
   // 🔹 2. Garante 1 jogador por posição
   positions.forEach((pos) => {
@@ -50,7 +19,7 @@ export function getStarters(players: Player[]): Player[] {
 
     if (!starters.some((p) => p.position === pos)) {
       const player = players.find(
-        (p) => p.position === pos && !starters.includes(p)
+        (p) => p.position === pos && !starters.includes(p),
       );
 
       if (player) starters.push(player);
@@ -68,4 +37,28 @@ export function getStarters(players: Player[]): Player[] {
   }
 
   return starters;
+}
+
+export function selectShooter(
+  players: Player[],
+  priorities: ShotPriorities = {},
+  random: () => number = Math.random,
+): Player {
+  const weights: Record<string, number> = {
+    less: 0.55,
+    normal: 1,
+    more: 1.6,
+  };
+  const totalWeight = players.reduce(
+    (total, player) => total + weights[priorities[player.id] ?? "normal"],
+    0,
+  );
+  let selection = random() * totalWeight;
+
+  for (const player of players) {
+    selection -= weights[priorities[player.id] ?? "normal"];
+    if (selection < 0) return player;
+  }
+
+  return players[players.length - 1];
 }
